@@ -102,7 +102,11 @@ export default function Home() {
         if (muscleListItems) {
           muscleListItems.forEach((item) => {
             const cleanedMuscle = item.replace(/[-•*]\s*/, "").trim();
-            if (cleanedMuscle && !nonVisibleList.includes(cleanedMuscle)) {
+            if (
+              cleanedMuscle &&
+              cleanedMuscle !== "*" &&
+              !nonVisibleList.includes(cleanedMuscle)
+            ) {
               nonVisibleList.push(cleanedMuscle);
             }
           });
@@ -113,7 +117,11 @@ export default function Home() {
             .filter((line) => line.trim().length > 0);
           muscleLines.forEach((line) => {
             const cleanedMuscle = line.trim();
-            if (cleanedMuscle && !nonVisibleList.includes(cleanedMuscle)) {
+            if (
+              cleanedMuscle &&
+              cleanedMuscle !== "*" &&
+              !nonVisibleList.includes(cleanedMuscle)
+            ) {
               nonVisibleList.push(cleanedMuscle);
             }
           });
@@ -156,10 +164,13 @@ export default function Home() {
 
       // Filter out redundancies and clean up muscle names
       nonVisibleList = nonVisibleList
-        .map((muscle) => muscle.replace(/^-\s*/, "").trim())
+        .map((muscle) => muscle.replace(/^[-*•\s]+/, "").trim())
         .filter(
           (muscle, index, self) =>
-            muscle.length > 0 && self.indexOf(muscle) === index
+            muscle.length > 0 &&
+            muscle !== "*" &&
+            !muscle.match(/^[*-•]$/) && // Filter out single characters that are just markers
+            self.indexOf(muscle) === index
         );
 
       setNonVisibleMuscles(nonVisibleList);

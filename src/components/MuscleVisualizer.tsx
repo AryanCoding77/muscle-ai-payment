@@ -126,7 +126,70 @@ const MuscleVisualizer: React.FC<MuscleVisualizerProps> = ({
       return "#f0f0f0"; // Very light gray for non-visible muscles
     }
 
-    if (rating === 0) return "#D3D3D3"; // Gray for muscles without data
+    // Check if any muscle has data for this muscle group, even if no direct match
+    if (rating === 0) {
+      // If rating is 0, check if there's data elsewhere with different naming
+      const muscleMap: { [key: string]: string[] } = {
+        pectoral: [
+          "pectoralis",
+          "chest",
+          "pectorals",
+          "pectoralis major",
+          "pecs",
+        ],
+        bicep: ["biceps", "biceps brachii", "arm", "arms"],
+        tricep: ["triceps", "triceps brachii"],
+        deltoid: ["delts", "shoulders", "shoulder", "deltoids"],
+        trapezius: ["traps", "upper back", "trap"],
+        abdominal: ["abs", "core", "abdominals", "abdomen", "six-pack"],
+        latissimus: [
+          "lats",
+          "back",
+          "latissimus dorsi",
+          "lats dorsi",
+          "mid-back",
+        ],
+        quad: ["quadriceps", "quads", "thigh", "thighs", "quadricep"],
+        hamstring: ["hamstrings", "posterior thigh", "back thigh", "hamis"],
+        gluteus: ["glutes", "butt", "gluteus maximus", "glute", "buttocks"],
+        calf: ["calves", "gastrocnemius", "soleus", "lower leg"],
+        forearm: ["forearms", "brachioradialis", "wrist"],
+        oblique: ["obliques", "side abs", "external oblique"],
+        serratus: ["serratus anterior", "boxer muscle", "serrated muscle"],
+        infraspinatus: ["rear delt", "rotator cuff"],
+        teres: ["teres major", "teres minor"],
+      };
+
+      // Try to find an alternative match
+      for (const [key, variations] of Object.entries(muscleMap)) {
+        if (
+          muscleId.toLowerCase().includes(key.toLowerCase()) ||
+          variations.some((v) =>
+            muscleId.toLowerCase().includes(v.toLowerCase())
+          )
+        ) {
+          // Check if we have data for any of these variations
+          for (const muscleData of data) {
+            for (const variation of [...variations, key]) {
+              if (
+                muscleData.name
+                  .toLowerCase()
+                  .includes(variation.toLowerCase()) ||
+                variation.toLowerCase().includes(muscleData.name.toLowerCase())
+              ) {
+                // Found a match, use its rating color
+                if (muscleData.rating < 4) return "#FF5252"; // Red
+                if (muscleData.rating < 7) return "#FFA726"; // Orange
+                return "#4CAF50"; // Green
+              }
+            }
+          }
+        }
+      }
+
+      return "#D3D3D3"; // Gray for muscles without any matched data
+    }
+
     if (rating < 4) return "#FF5252"; // Red for muscles needing significant improvement
     if (rating < 7) return "#FFA726"; // Orange for muscles needing moderate improvement
     return "#4CAF50"; // Green for well-developed muscles

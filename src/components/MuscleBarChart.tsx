@@ -28,12 +28,13 @@ const MuscleBarChart = ({ data }: MuscleBarChartProps) => {
   };
 
   return (
-    <div className="w-full h-[400px] mt-4">
+    <div className="w-full h-[500px] mt-4">
       <ResponsiveContainer width="100%" height="100%">
         <BarChart
           data={sortedData}
           layout="vertical"
-          margin={{ top: 20, right: 30, left: 80, bottom: 5 }}
+          margin={{ top: 20, right: 30, left: 120, bottom: 5 }}
+          barGap={8}
         >
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis type="number" domain={[0, 10]} />
@@ -41,7 +42,8 @@ const MuscleBarChart = ({ data }: MuscleBarChartProps) => {
             dataKey="name"
             type="category"
             tick={{ fill: "#666", fontSize: 12 }}
-            width={80}
+            width={120}
+            tickMargin={10}
           />
           <Tooltip
             formatter={(value: number) => [`${value}/10`, "Score"]}
@@ -52,6 +54,7 @@ const MuscleBarChart = ({ data }: MuscleBarChartProps) => {
             dataKey="rating"
             name="Muscle Development"
             minPointSize={3}
+            barSize={24}
             label={{ position: "right", fill: "#666", fontSize: 12 }}
           >
             {sortedData.map((entry, index) => (
