@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200" fill="none">
+  <path d="M100 180C144.183 180 180 144.183 180 100C180 55.8172 144.183 20 100 20C55.8172 20 20 55.8172 20 100C20 144.183 55.8172 180 100 180Z" fill="#EBF5FF" stroke="#3B82F6" stroke-width="2"/>
+  
+  <!-- Bicep Left -->
+  <path d="M55 75C52 82 50 90 50 100C50 110 52 120 57 127" stroke="#3B82F6" stroke-width="4" stroke-linecap="round"/>
+  
+  <!-- Bicep Right -->
+  <path d="M145 75C148 82 150 90 150 100C150 110 148 120 143 127" stroke="#3B82F6" stroke-width="4" stroke-linecap="round"/>
+  
+  <!-- Abs -->
+  <path d="M90 90V140" stroke="#3B82F6" stroke-width="4" stroke-linecap="round"/>
+  <path d="M110 90V140" stroke="#3B82F6" stroke-width="4" stroke-linecap="round"/>
+  <path d="M90 105H110" stroke="#3B82F6" stroke-width="3" stroke-linecap="round"/>
+  <path d="M90 120H110" stroke="#3B82F6" stroke-width="3" stroke-linecap="round"/>
+  <path d="M90 135H110" stroke="#3B82F6" stroke-width="3" stroke-linecap="round"/>
+  
+  <!-- Chest -->
+  <path d="M80 80C85 75 95 73 100 73C105 73 115 75 120 80" stroke="#3B82F6" stroke-width="4" stroke-linecap="round"/>
+  
+  <!-- Shoulders -->
+  <path d="M65 78C60 75 55 74 50 75" stroke="#3B82F6" stroke-width="4" stroke-linecap="round"/>
+  <path d="M135 78C140 75 145 74 150 75" stroke="#3B82F6" stroke-width="4" stroke-linecap="round"/>
+  
+  <!-- Arms -->
+  <path d="M50 100C45 105 43 110 45 120" stroke="#3B82F6" stroke-width="4" stroke-linecap="round"/>
+  <path d="M150 100C155 105 157 110 155 120" stroke="#3B82F6" stroke-width="4" stroke-linecap="round"/>
+  
+  <!-- Forearms -->
+  <path d="M45 120C47 125 50 130 55 133" stroke="#3B82F6" stroke-width="4" stroke-linecap="round"/>
+  <path d="M155 120C153 125 150 130 145 133" stroke="#3B82F6" stroke-width="4" stroke-linecap="round"/>
+  
+  <!-- Quads -->
+  <path d="M80 140C75 150 75 160 80 170" stroke="#3B82F6" stroke-width="4" stroke-linecap="round"/>
+  <path d="M120 140C125 150 125 160 120 170" stroke="#3B82F6" stroke-width="4" stroke-linecap="round"/>
+  
+  <!-- Head -->
+  <circle cx="100" cy="50" r="15" stroke="#3B82F6" stroke-width="4"/>
+  
+  <!-- Face abstraction -->
+  <path d="M95 45H105" stroke="#3B82F6" stroke-width="2" stroke-linecap="round"/>
+  <circle cx="93" cy="50" r="1" fill="#3B82F6"/>
+  <circle cx="107" cy="50" r="1" fill="#3B82F6"/>
+</svg> 

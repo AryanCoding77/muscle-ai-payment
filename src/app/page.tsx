@@ -578,82 +578,260 @@ export default function Home() {
         <h1 className="text-4xl font-bold mb-6 text-center text-blue-800">
           Muscle Analysis AI
         </h1>
-        <p className="text-lg mb-8 text-center">
+        <p className="text-lg mb-8 text-center text-gray-800">
           Upload a photo of your body to get an analysis of which muscles need
           more work
         </p>
 
-        <div className="flex flex-col w-full max-w-2xl mb-8">
-          <label
-            htmlFor="image-upload"
-            className="flex flex-col items-center justify-center w-full h-64 border-2 border-dashed rounded-lg cursor-pointer bg-white hover:bg-gray-100 border-blue-300"
-          >
-            <div className="flex flex-col items-center justify-center pt-5 pb-6">
-              <svg
-                className="w-10 h-10 mb-3 text-blue-500"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
-                ></path>
-              </svg>
-              <p className="mb-2 text-sm text-gray-700">
-                <span className="font-semibold">Click to upload</span> or drag
-                and drop
-              </p>
-              <p className="text-xs text-gray-500">PNG, JPG or GIF</p>
-            </div>
-            <input
-              id="image-upload"
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={handleImageUpload}
-              ref={fileInputRef}
-            />
-          </label>
-        </div>
-
-        {selectedImage && (
-          <div className="mt-8 flex flex-col items-center">
-            <div className="relative w-full max-w-md h-96 mb-6 shadow-lg rounded-lg overflow-hidden">
-              <Image
-                src={selectedImage}
-                alt="Selected body image"
-                fill
-                className="object-contain rounded-lg"
+        {!selectedImage && !isLoading && (
+          <div className="flex justify-center mb-8">
+            <div className="max-w-md">
+              <img
+                src="/muscle-illustration.svg"
+                alt="Muscle Analysis Illustration"
+                className="h-48 mx-auto mb-4 opacity-80"
+                onError={(e) => {
+                  // Fallback if the SVG is not available
+                  e.currentTarget.src =
+                    "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiM0MzM4Y2EiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj48cGF0aCBkPSJNNiA4aDEydjhINnoiPjwvcGF0aD48cGF0aCBkPSJNMTggOGwzIDMtMyAzIj48L3BhdGg+PHBhdGggZD0iTTYgOGwtMy0zIDMtMyI+PC9wYXRoPjxwYXRoIGQ9Ik0xOCAyMFY4Ij48L3BhdGg+PHBhdGggZD0iTTYgMjBWOCI+PC9wYXRoPjwvc3ZnPg==";
+                  e.currentTarget.classList.remove("h-48");
+                  e.currentTarget.classList.add("h-24");
+                }}
               />
+              <div className="text-center">
+                <h3 className="text-2xl font-semibold text-gray-800 mb-2">
+                  Ready to analyze your muscles
+                </h3>
+                <p className="text-gray-800 mb-4">
+                  Upload a clear photo showing your physique for a detailed
+                  muscle analysis
+                </p>
+                <div className="flex justify-center gap-6 text-sm text-gray-800">
+                  <div className="flex flex-col items-center">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-6 w-6 text-blue-500 mb-1"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"
+                      />
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"
+                      />
+                    </svg>
+                    <span>Upload photo</span>
+                  </div>
+                  <div className="flex flex-col items-center">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-6 w-6 text-blue-500 mb-1"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"
+                      />
+                    </svg>
+                    <span>Get analysis</span>
+                  </div>
+                  <div className="flex flex-col items-center">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-6 w-6 text-blue-500 mb-1"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M16 8v8m-4-5v5m-4-2v2m-2 4h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                      />
+                    </svg>
+                    <span>View results</span>
+                  </div>
+                </div>
+              </div>
             </div>
-            <button
-              onClick={analyzeImage}
-              disabled={isLoading}
-              className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:bg-blue-400 shadow-md"
-            >
-              {isLoading ? "Analyzing..." : "Analyze Muscles"}
-            </button>
           </div>
         )}
 
-        {isLoading && (
-          <div className="mt-6 p-4 bg-blue-100 border border-blue-400 text-blue-700 rounded-lg shadow">
-            <p className="text-center">
-              Analyzing your image... This may take a few moments.
-            </p>
-            <div className="flex justify-center mt-4">
-              <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-500"></div>
+        <div className="flex flex-col w-full max-w-2xl mb-8">
+          <div className="bg-white p-6 rounded-lg shadow-lg">
+            <h3 className="text-xl font-medium mb-4 text-gray-800">
+              Upload Your Photo
+            </h3>
+            <label
+              htmlFor="image-upload"
+              className="flex flex-col items-center justify-center w-full h-64 border-2 border-dashed rounded-lg cursor-pointer bg-blue-50 hover:bg-blue-100 border-blue-300 transition-all"
+            >
+              <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                <svg
+                  className="w-12 h-12 mb-4 text-blue-500"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
+                  ></path>
+                </svg>
+                <p className="mb-2 text-sm text-gray-800">
+                  <span className="font-semibold">Click to upload</span> or drag
+                  and drop
+                </p>
+                <p className="text-xs text-gray-800">
+                  PNG, JPG or GIF (Max 10MB)
+                </p>
+              </div>
+              <input
+                id="image-upload"
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleImageUpload}
+                ref={fileInputRef}
+              />
+            </label>
+          </div>
+        </div>
+
+        {selectedImage && (
+          <div className="mt-8 w-full max-w-2xl">
+            <div className="bg-white p-6 rounded-lg shadow-lg">
+              <h3 className="text-xl font-medium mb-4 text-gray-800">
+                Image Preview
+              </h3>
+              <div className="relative w-full h-[400px] mb-6 rounded-lg overflow-hidden border border-gray-200 bg-gray-100 shadow-inner">
+                <Image
+                  src={selectedImage}
+                  alt="Selected body image"
+                  fill
+                  className="object-contain"
+                />
+              </div>
+              <div className="flex justify-center">
+                <button
+                  onClick={analyzeImage}
+                  disabled={isLoading}
+                  className="px-8 py-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:bg-blue-400 shadow-md text-lg font-medium flex items-center"
+                >
+                  {isLoading ? (
+                    <>
+                      <svg
+                        className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                      >
+                        <circle
+                          className="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                        ></circle>
+                        <path
+                          className="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                        ></path>
+                      </svg>
+                      Analyzing...
+                    </>
+                  ) : (
+                    <>
+                      <svg
+                        className="w-5 h-5 mr-2"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                          d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"
+                        ></path>
+                      </svg>
+                      Analyze Muscles
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {isLoading && !selectedImage && (
+          <div className="mt-6 p-6 bg-white rounded-lg shadow-lg">
+            <div className="flex flex-col items-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mb-4"></div>
+              <p className="text-lg font-medium text-gray-800">
+                Analyzing your image...
+              </p>
+              <p className="text-sm text-gray-800 mt-2">
+                This may take a few moments as our AI examines your muscle
+                development
+              </p>
             </div>
           </div>
         )}
 
         {error && (
-          <div className="mt-6 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg shadow">
-            <p>{error}</p>
+          <div className="mt-6 p-6 bg-white rounded-lg shadow-lg">
+            <div className="flex items-start">
+              <div className="flex-shrink-0">
+                <svg
+                  className="h-6 w-6 text-red-500"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+              </div>
+              <div className="ml-3 w-full">
+                <h3 className="text-lg font-medium text-red-800">Error</h3>
+                <div className="mt-2 p-3 bg-red-50 border border-red-200 rounded-md">
+                  <p className="text-sm text-red-800">{error}</p>
+                </div>
+                <div className="mt-4">
+                  <button
+                    type="button"
+                    onClick={() => setError(null)}
+                    className="inline-flex items-center px-3 py-2 border border-red-300 shadow-sm text-sm leading-4 font-medium rounded-md text-red-700 bg-white hover:bg-red-50 focus:outline-none"
+                  >
+                    Dismiss
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         )}
 
@@ -667,7 +845,7 @@ export default function Home() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
               {/* Weakest Muscles */}
               <div className="bg-white p-4 rounded-lg shadow-lg border-l-4 border-l-red-500">
-                <h3 className="font-semibold text-lg mb-2 text-red-700">
+                <h3 className="font-semibold text-lg mb-2 text-red-800">
                   Needs Most Improvement
                 </h3>
                 {parsedMuscles.length > 0 &&
@@ -678,14 +856,16 @@ export default function Home() {
                         key={i}
                         className="flex items-center justify-between mb-2 p-2 bg-red-50 rounded"
                       >
-                        <span className="font-medium">{muscle.name}</span>
-                        <span className="text-red-700 font-bold">
+                        <span className="font-medium text-gray-800">
+                          {muscle.name}
+                        </span>
+                        <span className="text-red-800 font-bold">
                           {muscle.rating}/10
                         </span>
                       </div>
                     ))}
                 {parsedMuscles.length === 0 && (
-                  <p className="text-gray-500 italic">No data available</p>
+                  <p className="text-gray-800 italic">No data available</p>
                 )}
               </div>
 
@@ -709,10 +889,10 @@ export default function Home() {
                         }/10`
                       : "N/A"}
                   </div>
-                  <p className="text-center text-gray-600">
+                  <p className="text-center text-gray-800">
                     Average muscle development
                   </p>
-                  <p className="text-center mt-2">
+                  <p className="text-center mt-2 text-gray-800">
                     <span className="font-medium">
                       {parsedMuscles.length > 0
                         ? `${
@@ -726,7 +906,7 @@ export default function Home() {
 
               {/* Strongest Muscles */}
               <div className="bg-white p-4 rounded-lg shadow-lg border-l-4 border-l-green-500">
-                <h3 className="font-semibold text-lg mb-2 text-green-700">
+                <h3 className="font-semibold text-lg mb-2 text-green-800">
                   Well Developed
                 </h3>
                 {parsedMuscles.length > 0 &&
@@ -738,14 +918,16 @@ export default function Home() {
                         key={i}
                         className="flex items-center justify-between mb-2 p-2 bg-green-50 rounded"
                       >
-                        <span className="font-medium">{muscle.name}</span>
-                        <span className="text-green-700 font-bold">
+                        <span className="font-medium text-gray-800">
+                          {muscle.name}
+                        </span>
+                        <span className="text-green-800 font-bold">
                           {muscle.rating}/10
                         </span>
                       </div>
                     ))}
                 {parsedMuscles.length === 0 && (
-                  <p className="text-gray-500 italic">No data available</p>
+                  <p className="text-gray-800 italic">No data available</p>
                 )}
               </div>
             </div>
@@ -796,14 +978,16 @@ export default function Home() {
                 <MuscleDistributionChart data={parsedMuscles} />
                 <div className="mt-4 grid grid-cols-3 gap-2 text-center">
                   <div className="p-2 bg-red-50 rounded border border-red-200">
-                    <div className="font-medium">Weak (1-3)</div>
-                    <div className="text-xl font-bold text-red-600">
+                    <div className="font-medium text-gray-800">Weak (1-3)</div>
+                    <div className="text-xl font-bold text-red-800">
                       {parsedMuscles.filter((m) => m.rating <= 3).length}
                     </div>
                   </div>
                   <div className="p-2 bg-yellow-50 rounded border border-yellow-200">
-                    <div className="font-medium">Moderate (4-6)</div>
-                    <div className="text-xl font-bold text-yellow-600">
+                    <div className="font-medium text-gray-800">
+                      Moderate (4-6)
+                    </div>
+                    <div className="text-xl font-bold text-yellow-800">
                       {
                         parsedMuscles.filter(
                           (m) => m.rating > 3 && m.rating <= 6
@@ -812,8 +996,10 @@ export default function Home() {
                     </div>
                   </div>
                   <div className="p-2 bg-green-50 rounded border border-green-200">
-                    <div className="font-medium">Strong (7-10)</div>
-                    <div className="text-xl font-bold text-green-600">
+                    <div className="font-medium text-gray-800">
+                      Strong (7-10)
+                    </div>
+                    <div className="text-xl font-bold text-green-800">
                       {parsedMuscles.filter((m) => m.rating > 6).length}
                     </div>
                   </div>
@@ -834,10 +1020,10 @@ export default function Home() {
                         <span
                           className={`text-sm font-medium ${
                             muscle.rating < 5
-                              ? "text-red-700"
+                              ? "text-red-800"
                               : muscle.rating > 7
-                              ? "text-green-700"
-                              : "text-yellow-700"
+                              ? "text-green-800"
+                              : "text-yellow-800"
                           }`}
                         >
                           {muscle.name}
@@ -860,7 +1046,7 @@ export default function Home() {
                     </div>
                   ))}
                 {parsedMuscles.length === 0 && (
-                  <p className="text-gray-500 italic">
+                  <p className="text-gray-800 italic">
                     No muscle data available
                   </p>
                 )}
@@ -876,10 +1062,10 @@ export default function Home() {
                 {parsedMuscles.map((muscle, index) => (
                   <div key={index} className="flex flex-col">
                     <div className="flex justify-between mb-1">
-                      <span className="text-base font-medium text-gray-700">
+                      <span className="text-base font-medium text-gray-800">
                         {muscle.name}
                       </span>
-                      <span className="text-sm font-medium text-gray-700">
+                      <span className="text-sm font-medium text-gray-800">
                         {muscle.rating}/10
                       </span>
                     </div>
@@ -902,7 +1088,7 @@ export default function Home() {
                 <h3 className="text-xl font-medium mb-4 text-red-800">
                   Priority Training Plan
                 </h3>
-                <p className="mb-4 text-gray-700">
+                <p className="mb-4 text-gray-800">
                   These muscles need the most attention in your training
                   routine:
                 </p>
@@ -929,7 +1115,7 @@ export default function Home() {
                         </div>
                         <div className="space-y-2">
                           {muscle.exercises.length > 0 ? (
-                            <ul className="list-disc list-inside text-gray-700">
+                            <ul className="list-disc list-inside text-gray-800">
                               {muscle.exercises.map((exercise, i) => (
                                 <li key={i} className="py-1">
                                   {exercise}
@@ -937,7 +1123,7 @@ export default function Home() {
                               ))}
                             </ul>
                           ) : (
-                            <p className="text-gray-500 italic">
+                            <p className="text-gray-800 italic">
                               No specific exercises recommended
                             </p>
                           )}
@@ -976,7 +1162,7 @@ export default function Home() {
                     </div>
                     <div className="space-y-2">
                       {muscle.exercises.length > 0 ? (
-                        <ul className="list-disc list-inside text-gray-700">
+                        <ul className="list-disc list-inside text-gray-800">
                           {muscle.exercises.map((exercise, i) => (
                             <li key={i} className="py-1">
                               {exercise}
@@ -984,7 +1170,7 @@ export default function Home() {
                           ))}
                         </ul>
                       ) : (
-                        <p className="text-gray-500 italic">
+                        <p className="text-gray-800 italic">
                           No specific exercises recommended
                         </p>
                       )}
@@ -997,10 +1183,10 @@ export default function Home() {
             {/* Original Analysis Text */}
             <div className="mt-6 p-6 bg-white rounded-lg shadow border border-gray-200">
               <details>
-                <summary className="text-blue-600 font-medium cursor-pointer">
+                <summary className="text-blue-700 font-medium cursor-pointer">
                   View Full Analysis Text
                 </summary>
-                <div className="mt-4 whitespace-pre-line text-gray-700 bg-gray-50 p-4 rounded">
+                <div className="mt-4 whitespace-pre-line text-gray-800 bg-gray-50 p-4 rounded">
                   {analysis}
                 </div>
               </details>
