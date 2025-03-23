@@ -27,15 +27,45 @@ export async function POST(request: NextRequest) {
     // Use a more detailed prompt to guide the analysis
     const prompt = `
       You are a professional fitness trainer and body analyst.
-      Look at this body image carefully and identify which muscle groups appear to be underdeveloped or need more training.
+      Look at this body image carefully and analyze ONLY the visible muscle groups in the image.
       
-      For each muscle group that needs work:
-      1. Name the specific muscle (e.g., pectorals, deltoids, latissimus dorsi, etc.)
+      CRITICAL INSTRUCTIONS:
+      - You MUST ONLY analyze muscles that are CLEARLY VISIBLE in the image
+      - DO NOT rate or analyze ANY muscles that cannot be seen in this specific angle/view
+      - Be extremely strict about this - if a muscle is even partially obscured or not clearly visible, DO NOT rate it
+      
+      Different views show different muscles:
+      - Front views: can assess chest, abs, biceps, quads, shoulders (front)
+      - Back views: can assess back (lats, traps), shoulders (rear), hamstrings, calves
+      - Side views: can assess side deltoids, obliques, some arm muscles
+      
+      For each VISIBLE muscle group only:
+      1. Name the specific muscle
       2. Rate its development on a scale of 1-10
       3. Suggest 2-3 specific exercises to improve that muscle group
       
-      Be comprehensive but focus on the most noticeable areas that need improvement.
-      If the image doesn't show certain parts of the body clearly, mention that in your analysis.
+      Format your response as a numbered list with clear headings for each muscle.
+      For each muscle use this exact format:
+      
+      1. **Muscle Name**: Development: X/10
+      * Exercises to improve:
+      * Exercise 1
+      * Exercise 2
+      * Exercise 3
+      
+      CRITICAL: At the end of your analysis, you MUST include a separate section with the heading:
+      
+      "Muscles not visible in this image:"
+      
+      List all major muscle groups that CANNOT be assessed from this angle. Be thorough and include all standard muscle groups not visible in the current view.
+      
+      Example for a back view photo:
+      "Muscles not visible in this image:
+      - Chest (Pectorals)
+      - Abs
+      - Front Deltoids
+      - Biceps (front of arms)
+      - Quadriceps (front of thighs)"
     `;
 
     // Use the chat completions API with vision capabilities

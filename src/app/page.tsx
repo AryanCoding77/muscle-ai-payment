@@ -6,6 +6,7 @@ import { MuscleData } from "../types/muscle";
 import MuscleRadarChart from "../components/MuscleRadarChart";
 import MuscleBarChart from "../components/MuscleBarChart";
 import MuscleDistributionChart from "../components/MuscleDistributionChart";
+import MuscleVisualizer from "../components/MuscleVisualizer";
 
 export default function Home() {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
@@ -15,6 +16,7 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [activeChart, setActiveChart] = useState<"radar" | "bar">("radar");
+  const [nonVisibleMuscles, setNonVisibleMuscles] = useState<string[]>([]);
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -83,6 +85,85 @@ export default function Home() {
     if (!analysis) return;
 
     try {
+      // Extract a list of muscles that cannot be assessed from this angle
+      const nonVisibleRegex =
+        /(?:cannot|can't|not possible to|unable to|not visible|impossible to)\s+(?:assess|evaluate|analyze|see|view|rate|determine)\s+(?:the\s+)?([^.,]+)(?:\s+muscles?)?/gi;
+
+      let nonVisibleList: string[] = [];
+
+      // Look for the specific section for non-visible muscles
+      const sectionMatch = analysis.match(
+        /muscles not visible in this image:?([\s\S]*?)(?=\d+\.|$)/i
+      );
+
+      if (sectionMatch && sectionMatch[1]) {
+        // Extract from the dedicated section - this is the preferred method
+        const muscleListItems = sectionMatch[1].match(/[-•*]\s*([^-\n]+)/g);
+        if (muscleListItems) {
+          muscleListItems.forEach((item) => {
+            const cleanedMuscle = item.replace(/[-•*]\s*/, "").trim();
+            if (cleanedMuscle && !nonVisibleList.includes(cleanedMuscle)) {
+              nonVisibleList.push(cleanedMuscle);
+            }
+          });
+        } else {
+          // If no bullet points, try line by line
+          const muscleLines = sectionMatch[1]
+            .split("\n")
+            .filter((line) => line.trim().length > 0);
+          muscleLines.forEach((line) => {
+            const cleanedMuscle = line.trim();
+            if (cleanedMuscle && !nonVisibleList.includes(cleanedMuscle)) {
+              nonVisibleList.push(cleanedMuscle);
+            }
+          });
+        }
+      } else {
+        // Fallback to scanning the text for mentions of non-visible muscles
+        const notVisibleMatches = [...analysis.matchAll(nonVisibleRegex)];
+
+        notVisibleMatches.forEach((match) => {
+          if (match[1]) {
+            nonVisibleList.push(match[1].trim());
+          }
+        });
+
+        // Look for explicit statements about what can't be seen
+        if (
+          analysis.includes("not visible in this image") ||
+          analysis.includes("cannot be assessed from this angle")
+        ) {
+          const notVisibleSection = analysis.split(
+            /muscles (?:that )?(?:are )?(?:not visible|cannot be assessed)/i
+          )[1];
+
+          if (notVisibleSection) {
+            const muscleList = notVisibleSection.match(
+              /([A-Za-z\s()]+)(?:,|\.|\n|and)/g
+            );
+
+            if (muscleList) {
+              muscleList.forEach((muscle) => {
+                const cleanedMuscle = muscle.replace(/,|\.|and|\n/g, "").trim();
+                if (cleanedMuscle && !nonVisibleList.includes(cleanedMuscle)) {
+                  nonVisibleList.push(cleanedMuscle);
+                }
+              });
+            }
+          }
+        }
+      }
+
+      // Filter out redundancies and clean up muscle names
+      nonVisibleList = nonVisibleList
+        .map((muscle) => muscle.replace(/^-\s*/, "").trim())
+        .filter(
+          (muscle, index, self) =>
+            muscle.length > 0 && self.indexOf(muscle) === index
+        );
+
+      setNonVisibleMuscles(nonVisibleList);
+
       // Simple regex-based parsing of the muscle data
       const muscleRegex =
         /\d+\.\s+\*\*([^*:]+)(?:\*\*)?:\s*(?:The .+?)?(?:Development:|Rating:)?\s*(\d+)\/10/g;
@@ -544,13 +625,8 @@ export default function Home() {
   }, [analysis]);
 
   // Get sorted muscles by rating (ascending)
-  const getSortedMuscles = (muscles: MuscleData[]) => {
+  const getSortedMuscles = (muscles: MuscleData[]): MuscleData[] => {
     return [...muscles].sort((a, b) => a.rating - b.rating);
-  };
-
-  // Get muscles that need the most training (rating < 5)
-  const getMusclesNeedingTraining = (muscles: MuscleData[]) => {
-    return muscles.filter((muscle) => muscle.rating < 5);
   };
 
   // Get muscles with highest ratings (rating > 7)
@@ -559,17 +635,28 @@ export default function Home() {
   };
 
   // Color for muscle rating bars
-  const getRatingColor = (rating: number) => {
-    if (rating <= 3) return "bg-red-500";
-    if (rating <= 6) return "bg-yellow-500";
-    return "bg-green-500";
+  const getRatingColor = (rating: number): string => {
+    if (rating < 7) {
+      return "bg-red-500";
+    } else {
+      return "bg-green-500";
+    }
   };
 
   // Get background color class for muscle cards
-  const getMuscleCardColor = (rating: number) => {
-    if (rating <= 3) return "bg-red-50 border-red-200";
-    if (rating <= 6) return "bg-yellow-50 border-yellow-200";
-    return "bg-green-50 border-green-200";
+  const getBadgeClass = (rating: number): string => {
+    if (rating < 7) {
+      return "bg-red-50 border-red-200";
+    } else {
+      return "bg-green-50 border-green-200";
+    }
+  };
+
+  // Update the average rating calculation
+  const calculateAverageRating = (muscles: MuscleData[]): number => {
+    if (muscles.length === 0) return 0;
+    const sum = muscles.reduce((total, muscle) => total + muscle.rating, 0);
+    return Math.round((sum / muscles.length) * 10) / 10; // Round to 1 decimal place
   };
 
   return (
@@ -841,15 +928,50 @@ export default function Home() {
               Muscle Analysis Results
             </h2>
 
+            {/* Visibility note */}
+            <div className="mb-6 p-4 bg-blue-50 rounded-lg border-l-4 border-l-blue-500 shadow-sm">
+              <div className="flex items-start">
+                <div className="flex-shrink-0 mt-0.5">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-6 w-6 text-blue-500"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
+                  </svg>
+                </div>
+                <div className="ml-3">
+                  <h3 className="text-lg font-medium text-blue-800">
+                    About This Analysis
+                  </h3>
+                  <p className="text-gray-800 mt-1">
+                    This analysis is based on{" "}
+                    <strong>muscles visible in the provided image only</strong>.
+                    Some muscle groups may not be rated if they are not clearly
+                    visible from this angle. For a complete assessment, consider
+                    uploading images from different angles (front, back, side).
+                  </p>
+                </div>
+              </div>
+            </div>
+
             {/* Muscle Summary Dashboard */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
               {/* Weakest Muscles */}
               <div className="bg-white p-4 rounded-lg shadow-lg border-l-4 border-l-red-500">
                 <h3 className="font-semibold text-lg mb-2 text-red-800">
-                  Needs Most Improvement
+                  Needs Improvement
                 </h3>
                 {parsedMuscles.length > 0 &&
                   getSortedMuscles(parsedMuscles)
+                    .filter((muscle) => muscle.rating < 7)
                     .slice(0, 3)
                     .map((muscle, i) => (
                       <div
@@ -864,8 +986,11 @@ export default function Home() {
                         </span>
                       </div>
                     ))}
-                {parsedMuscles.length === 0 && (
-                  <p className="text-gray-800 italic">No data available</p>
+                {parsedMuscles.filter((muscle) => muscle.rating < 7).length ===
+                  0 && (
+                  <p className="text-gray-800 italic">
+                    No muscles need improvement
+                  </p>
                 )}
               </div>
 
@@ -875,19 +1000,11 @@ export default function Home() {
                   Overall Status
                 </h3>
                 <div className="flex flex-col items-center justify-center h-full">
-                  <div className="text-3xl font-bold text-blue-800 mb-2">
+                  <div className="text-5xl font-bold text-blue-700 mt-4">
                     {parsedMuscles.length > 0
-                      ? `${
-                          Math.round(
-                            (parsedMuscles.reduce(
-                              (acc, m) => acc + m.rating,
-                              0
-                            ) /
-                              parsedMuscles.length) *
-                              10
-                          ) / 10
-                        }/10`
+                      ? calculateAverageRating(parsedMuscles)
                       : "N/A"}
+                    /10
                   </div>
                   <p className="text-center text-gray-800">
                     Average muscle development
@@ -896,7 +1013,7 @@ export default function Home() {
                     <span className="font-medium">
                       {parsedMuscles.length > 0
                         ? `${
-                            getMusclesNeedingTraining(parsedMuscles).length
+                            parsedMuscles.filter((m) => m.rating < 7).length
                           } of ${parsedMuscles.length} muscles need focus`
                         : "No data"}
                     </span>
@@ -911,6 +1028,7 @@ export default function Home() {
                 </h3>
                 {parsedMuscles.length > 0 &&
                   getSortedMuscles(parsedMuscles)
+                    .filter((muscle) => muscle.rating >= 7)
                     .slice(-3)
                     .reverse()
                     .map((muscle, i) => (
@@ -926,8 +1044,11 @@ export default function Home() {
                         </span>
                       </div>
                     ))}
-                {parsedMuscles.length === 0 && (
-                  <p className="text-gray-800 italic">No data available</p>
+                {parsedMuscles.filter((muscle) => muscle.rating >= 7).length ===
+                  0 && (
+                  <p className="text-gray-800 italic">
+                    No well developed muscles
+                  </p>
                 )}
               </div>
             </div>
@@ -975,32 +1096,21 @@ export default function Home() {
                 <h3 className="text-xl font-medium mb-4 text-gray-800">
                   Muscle Strength Distribution
                 </h3>
-                <MuscleDistributionChart data={parsedMuscles} />
-                <div className="mt-4 grid grid-cols-3 gap-2 text-center">
+                <div className="mt-4 grid grid-cols-2 gap-4 text-center">
                   <div className="p-2 bg-red-50 rounded border border-red-200">
-                    <div className="font-medium text-gray-800">Weak (1-3)</div>
-                    <div className="text-xl font-bold text-red-800">
-                      {parsedMuscles.filter((m) => m.rating <= 3).length}
-                    </div>
-                  </div>
-                  <div className="p-2 bg-yellow-50 rounded border border-yellow-200">
                     <div className="font-medium text-gray-800">
-                      Moderate (4-6)
+                      Needs Improvement (1-6)
                     </div>
-                    <div className="text-xl font-bold text-yellow-800">
-                      {
-                        parsedMuscles.filter(
-                          (m) => m.rating > 3 && m.rating <= 6
-                        ).length
-                      }
+                    <div className="text-xl font-bold text-red-800">
+                      {parsedMuscles.filter((m) => m.rating < 7).length}
                     </div>
                   </div>
                   <div className="p-2 bg-green-50 rounded border border-green-200">
                     <div className="font-medium text-gray-800">
-                      Strong (7-10)
+                      Well Developed (7-10)
                     </div>
                     <div className="text-xl font-bold text-green-800">
-                      {parsedMuscles.filter((m) => m.rating > 6).length}
+                      {parsedMuscles.filter((m) => m.rating >= 7).length}
                     </div>
                   </div>
                 </div>
@@ -1019,11 +1129,9 @@ export default function Home() {
                       <div className="w-1/4 md:w-1/5 pr-4">
                         <span
                           className={`text-sm font-medium ${
-                            muscle.rating < 5
+                            muscle.rating < 7
                               ? "text-red-800"
-                              : muscle.rating > 7
-                              ? "text-green-800"
-                              : "text-yellow-800"
+                              : "text-green-800"
                           }`}
                         >
                           {muscle.name}
@@ -1083,7 +1191,7 @@ export default function Home() {
             </div>
 
             {/* Priority Training Plan */}
-            {getMusclesNeedingTraining(parsedMuscles).length > 0 && (
+            {parsedMuscles.filter((muscle) => muscle.rating < 7).length > 0 && (
               <div className="mb-8 p-6 bg-white rounded-lg shadow-lg border border-red-200">
                 <h3 className="text-xl font-medium mb-4 text-red-800">
                   Priority Training Plan
@@ -1093,11 +1201,12 @@ export default function Home() {
                   routine:
                 </p>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {getMusclesNeedingTraining(parsedMuscles).map(
-                    (muscle, index) => (
+                  {parsedMuscles
+                    .filter((muscle) => muscle.rating < 7)
+                    .map((muscle, index) => (
                       <div
                         key={index}
-                        className={`border rounded-lg p-4 ${getMuscleCardColor(
+                        className={`border rounded-lg p-4 ${getBadgeClass(
                           muscle.rating
                         )} shadow-sm`}
                       >
@@ -1129,8 +1238,7 @@ export default function Home() {
                           )}
                         </div>
                       </div>
-                    )
-                  )}
+                    ))}
                 </div>
               </div>
             )}
@@ -1144,7 +1252,7 @@ export default function Home() {
                 {parsedMuscles.map((muscle, index) => (
                   <div
                     key={index}
-                    className={`border rounded-lg p-4 ${getMuscleCardColor(
+                    className={`border rounded-lg p-4 ${getBadgeClass(
                       muscle.rating
                     )} shadow-sm`}
                   >
@@ -1191,6 +1299,130 @@ export default function Home() {
                 </div>
               </details>
             </div>
+
+            {/* Human Body Muscle Visualization */}
+            <div className="mb-8 p-6 bg-white rounded-lg shadow-lg">
+              <h3 className="text-xl font-medium mb-4 text-gray-800">
+                Visual Muscle Map
+              </h3>
+              <p className="mb-4 text-gray-800">
+                This interactive visualization shows your muscle development
+                based on the analysis. Hover over any muscle to see its details:
+              </p>
+              <div className="mb-4 flex flex-wrap gap-4 justify-center">
+                <div className="flex items-center">
+                  <div className="w-4 h-4 bg-red-500 rounded mr-2"></div>
+                  <span className="text-gray-800">Needs Work (1-3)</span>
+                </div>
+                <div className="flex items-center">
+                  <div className="w-4 h-4 bg-yellow-500 rounded mr-2"></div>
+                  <span className="text-gray-800">Moderate (4-6)</span>
+                </div>
+                <div className="flex items-center">
+                  <div className="w-4 h-4 bg-green-500 rounded mr-2"></div>
+                  <span className="text-gray-800">Strong (7-10)</span>
+                </div>
+                <div className="flex items-center">
+                  <div className="w-4 h-4 bg-gray-300 rounded mr-2"></div>
+                  <span className="text-gray-800">No Data</span>
+                </div>
+              </div>
+              <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 h-[600px]">
+                <MuscleVisualizer
+                  data={parsedMuscles}
+                  nonVisibleMuscles={nonVisibleMuscles}
+                />
+              </div>
+              <p className="mt-4 text-sm text-gray-700 text-center italic">
+                Click or hover over muscles to see ratings and recommended
+                exercises
+              </p>
+            </div>
+
+            {/* Muscles Not Visible in This Image */}
+            {nonVisibleMuscles.length > 0 && (
+              <div className="mb-8 p-6 bg-yellow-50 rounded-lg shadow-lg border-l-4 border-l-yellow-500">
+                <div className="flex items-start">
+                  <div className="flex-shrink-0 mt-0.5">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-6 w-6 text-yellow-500"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                      />
+                    </svg>
+                  </div>
+                  <div className="ml-3 flex-1">
+                    <h3 className="text-xl font-semibold text-yellow-800 mb-3">
+                      Muscles Not Visible in This Image
+                    </h3>
+                    <p className="text-gray-800 mb-4">
+                      The following muscles{" "}
+                      <span className="font-semibold">
+                        cannot be properly assessed
+                      </span>{" "}
+                      from this angle and have been excluded from the analysis:
+                    </p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mb-4">
+                      {nonVisibleMuscles.map((muscle, index) => (
+                        <div
+                          key={index}
+                          className="flex items-center px-3 py-2 bg-yellow-100 rounded-lg border border-yellow-200"
+                        >
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            className="h-5 w-5 text-yellow-600 mr-2"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                            />
+                          </svg>
+                          <span className="text-gray-800 font-medium">
+                            {muscle}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="mt-2 mb-2 border-t border-yellow-200 pt-4">
+                      <div className="flex items-start">
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          className="h-5 w-5 text-blue-500 mr-2 mt-0.5"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                          />
+                        </svg>
+                        <p className="text-gray-800">
+                          <span className="font-medium">Recommendation:</span>{" "}
+                          For a complete assessment, consider uploading images
+                          from multiple angles (front, back, and sides).
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
