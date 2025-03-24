@@ -7,6 +7,7 @@ import MuscleRadarChart from "../components/MuscleRadarChart";
 import MuscleBarChart from "../components/MuscleBarChart";
 import MuscleDistributionChart from "../components/MuscleDistributionChart";
 import MuscleVisualizer from "../components/MuscleVisualizer";
+import ExerciseSection from "../components/ExerciseSection";
 
 export default function Home() {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
@@ -17,6 +18,8 @@ export default function Home() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [activeChart, setActiveChart] = useState<"radar" | "bar">("radar");
   const [nonVisibleMuscles, setNonVisibleMuscles] = useState<string[]>([]);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const lastAnalysisTime = useRef<number>(0);
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -26,6 +29,9 @@ export default function Home() {
     setAnalysis(null);
     setError(null);
     setParsedMuscles([]);
+    setNonVisibleMuscles([]);
+    setIsAnalyzing(false);
+    lastAnalysisTime.current = 0; // Reset the cooldown timer for a new image
 
     // Check file type
     if (!file.type.startsWith("image/")) {
@@ -47,9 +53,31 @@ export default function Home() {
       return;
     }
 
+    // Check if an analysis is already in progress
+    if (isAnalyzing) {
+      setError("An analysis is already in progress. Please wait.");
+      return;
+    }
+
+    // Implement a simple cooldown to prevent rapid fire requests
+    const now = Date.now();
+    const timeSinceLastAnalysis = now - lastAnalysisTime.current;
+    if (timeSinceLastAnalysis < 1000) {
+      // 1 second cooldown instead of 3
+      // 3 seconds cooldown
+      setError(
+        `Please wait ${Math.ceil(
+          (1000 - timeSinceLastAnalysis) / 1000
+        )} seconds before analyzing again.`
+      );
+      return;
+    }
+
     try {
       setIsLoading(true);
+      setIsAnalyzing(true);
       setError(null);
+      lastAnalysisTime.current = now;
 
       const formData = new FormData();
       formData.append("image", fileInputRef.current.files[0]);
@@ -62,7 +90,18 @@ export default function Home() {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || "Failed to analyze image");
+        if (response.status === 429) {
+          // Handle rate limiting
+          throw new Error(
+            data.error ||
+              "Too many requests. Please wait a moment before trying again."
+          );
+        } else if (data.isImageQuality) {
+          // Handle image quality issues
+          throw new Error(data.error);
+        } else {
+          throw new Error(data.error || "Failed to analyze image");
+        }
       }
 
       if (!data.analysis) {
@@ -77,6 +116,7 @@ export default function Home() {
       );
     } finally {
       setIsLoading(false);
+      setIsAnalyzing(false);
     }
   };
 
@@ -881,16 +921,17 @@ export default function Home() {
           </div>
         )}
 
-        {isLoading && !selectedImage && (
+        {isLoading && (
           <div className="mt-6 p-6 bg-white rounded-lg shadow-lg">
             <div className="flex flex-col items-center">
               <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mb-4"></div>
               <p className="text-lg font-medium text-gray-800">
                 Analyzing your image...
               </p>
-              <p className="text-sm text-gray-800 mt-2">
-                This may take a few moments as our AI examines your muscle
-                development
+              <p className="text-sm text-gray-800 mt-2 text-center max-w-md">
+                This may take up to 10-15 seconds as our AI examines your muscle
+                development. Please don't refresh the page or submit multiple
+                requests.
               </p>
             </div>
           </div>
@@ -914,20 +955,46 @@ export default function Home() {
                   />
                 </svg>
               </div>
-              <div className="ml-3 w-full">
+              <div className="ml-3">
                 <h3 className="text-lg font-medium text-red-800">Error</h3>
-                <div className="mt-2 p-3 bg-red-50 border border-red-200 rounded-md">
-                  <p className="text-sm text-red-800">{error}</p>
+                <div className="mt-2 text-red-700">
+                  <p>{error}</p>
+                  {error.includes("wait") ||
+                  error.includes("Too many requests") ? (
+                    <p className="mt-2 text-sm">
+                      The AI model has rate limits to prevent overuse. Please
+                      wait a moment before trying again.
+                    </p>
+                  ) : null}
+                  {error ===
+                  "An analysis is already in progress. Please wait." ? (
+                    <p className="mt-2 text-sm">
+                      Your previous analysis request is still being processed.
+                      Please be patient.
+                    </p>
+                  ) : null}
+                  {error.includes("image quality") ||
+                  error.includes("clearer, higher resolution") ? (
+                    <p className="mt-2 text-sm">
+                      Try uploading a photo with better lighting, less blur, and
+                      focused clearly on the subject. The AI needs to see muscle
+                      details clearly to analyze them properly.
+                    </p>
+                  ) : null}
                 </div>
-                <div className="mt-4">
+                {(error.includes("wait") ||
+                  error.includes("Too many requests") ||
+                  error ===
+                    "An analysis is already in progress. Please wait." ||
+                  error.includes("image quality") ||
+                  error.includes("clearer, higher resolution")) && (
                   <button
-                    type="button"
+                    className="mt-3 px-4 py-2 bg-blue-100 text-blue-700 rounded-md hover:bg-blue-200 transition-colors text-sm"
                     onClick={() => setError(null)}
-                    className="inline-flex items-center px-3 py-2 border border-red-300 shadow-sm text-sm leading-4 font-medium rounded-md text-red-700 bg-white hover:bg-red-50 focus:outline-none"
                   >
                     Dismiss
                   </button>
-                </div>
+                )}
               </div>
             </div>
           </div>
@@ -1255,49 +1322,7 @@ export default function Home() {
             )}
 
             {/* Exercise Recommendations */}
-            <div className="p-6 bg-white rounded-lg shadow-lg">
-              <h3 className="text-xl font-medium mb-4 text-gray-800">
-                Complete Exercise Plan
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {parsedMuscles.map((muscle, index) => (
-                  <div
-                    key={index}
-                    className={`border rounded-lg p-4 ${getBadgeClass(
-                      muscle.rating
-                    )} shadow-sm`}
-                  >
-                    <div className="flex justify-between items-center">
-                      <h4 className="font-semibold text-lg mb-2 text-gray-800">
-                        {muscle.name}
-                      </h4>
-                      <span
-                        className={`px-2 py-1 rounded-full text-white text-xs font-bold ${getRatingColor(
-                          muscle.rating
-                        )}`}
-                      >
-                        {muscle.rating}/10
-                      </span>
-                    </div>
-                    <div className="space-y-2">
-                      {muscle.exercises.length > 0 ? (
-                        <ul className="list-disc list-inside text-gray-800">
-                          {muscle.exercises.map((exercise, i) => (
-                            <li key={i} className="py-1">
-                              {exercise}
-                            </li>
-                          ))}
-                        </ul>
-                      ) : (
-                        <p className="text-gray-800 italic">
-                          No specific exercises recommended
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
+            <ExerciseSection muscles={parsedMuscles} />
 
             {/* Original Analysis Text */}
             <div className="mt-6 p-6 bg-white rounded-lg shadow border border-gray-200">
