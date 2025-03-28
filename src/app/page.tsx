@@ -52,6 +52,7 @@ export default function HomePage() {
   const { scrollY } = useScroll();
   const [isScrolled, setIsScrolled] = useState(false);
   const [showScrollTop, setShowScrollTop] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   // Transform navbar background opacity based on scroll position
   const navbarBgOpacity = useTransform(scrollY, [0, 50], [0, 1]);
@@ -83,6 +84,11 @@ export default function HomePage() {
       top: 0,
       behavior: "smooth",
     });
+  };
+
+  // Toggle mobile menu
+  const toggleMobileMenu = () => {
+    setIsMobileMenuOpen(!isMobileMenuOpen);
   };
 
   return (
@@ -214,7 +220,11 @@ export default function HomePage() {
               </Link>
 
               {/* Mobile menu button */}
-              <button className="md:hidden flex items-center">
+              <button
+                onClick={toggleMobileMenu}
+                className="md:hidden flex items-center"
+                aria-label="Toggle mobile menu"
+              >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   className="h-6 w-6"
@@ -233,6 +243,97 @@ export default function HomePage() {
             </div>
           </div>
         </motion.div>
+      </motion.div>
+
+      {/* Mobile Menu */}
+      <motion.div
+        className={`fixed inset-0 bg-black/90 backdrop-blur-sm z-40 md:hidden ${
+          isMobileMenuOpen ? "flex" : "hidden"
+        } flex-col items-center justify-center`}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: isMobileMenuOpen ? 1 : 0 }}
+        transition={{ duration: 0.2 }}
+      >
+        <button
+          onClick={toggleMobileMenu}
+          className="absolute top-6 right-6 p-2 text-white"
+          aria-label="Close menu"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-8 w-8"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M6 18L18 6M6 6l12 12"
+            />
+          </svg>
+        </button>
+
+        <div className="flex flex-col items-center space-y-6 text-xl">
+          <Link
+            href="/products"
+            className="text-white hover:text-blue-400 transition-colors py-2"
+            onClick={toggleMobileMenu}
+          >
+            Products
+          </Link>
+          <Link
+            href="/docs"
+            className="text-white hover:text-blue-400 transition-colors py-2"
+            onClick={toggleMobileMenu}
+          >
+            Docs
+          </Link>
+          <Link
+            href="/solutions"
+            className="text-white hover:text-blue-400 transition-colors py-2"
+            onClick={toggleMobileMenu}
+          >
+            Solutions
+          </Link>
+          <Link
+            href="/about"
+            className="text-white hover:text-blue-400 transition-colors py-2"
+            onClick={toggleMobileMenu}
+          >
+            About
+          </Link>
+          <Link
+            href="/customers"
+            className="text-white hover:text-blue-400 transition-colors py-2"
+            onClick={toggleMobileMenu}
+          >
+            Customers
+          </Link>
+          <Link
+            href="/pricing"
+            className="text-white hover:text-blue-400 transition-colors py-2"
+            onClick={toggleMobileMenu}
+          >
+            Pricing
+          </Link>
+          <Link
+            href="/contact"
+            className="text-white hover:text-blue-400 transition-colors py-2"
+            onClick={toggleMobileMenu}
+          >
+            Contact
+          </Link>
+
+          <Link
+            href="/login"
+            className="mt-4 bg-blue-600 text-white hover:bg-blue-700 transition-colors px-8 py-3 rounded-full font-medium"
+            onClick={toggleMobileMenu}
+          >
+            Login →
+          </Link>
+        </div>
       </motion.div>
 
       {/* Back to top button */}
