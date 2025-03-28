@@ -1,8 +1,6 @@
 # Muscle Analysis AI
 
-A web application that analyzes body photos using AI to identify weak or underdeveloped muscles and provide feedback for improvement.
-
-![Muscle AI Screenshot](https://i.imgur.com/PLACEHOLDER.png)
+A web application that analyzes body photos using Llama 3.2 Vision to identify weak or underdeveloped muscles and provide feedback for improvement.
 
 ## Features
 
@@ -14,21 +12,13 @@ A web application that analyzes body photos using AI to identify weak or underde
 - Efficient caching system for faster repeated analyses
 - Rate limiting to prevent API abuse
 
-## Tech Stack
-
-- **Frontend**: Next.js, React, Tailwind CSS
-- **Authentication**: Auth0
-- **AI**: Together AI's Llama 3.2 Vision model
-- **Charts**: Recharts
-- **Deployment**: Vercel
-
 ## Getting Started
 
 ### Prerequisites
 
 - Node.js 18+ installed
+- Redis server (local or cloud-hosted)
 - A Together AI API key (get one at [https://api.together.xyz/settings/api-keys](https://api.together.xyz/settings/api-keys))
-- An Auth0 account and application (for authentication)
 
 ### Installation
 
@@ -37,21 +27,34 @@ A web application that analyzes body photos using AI to identify weak or underde
    ```bash
    npm install
    ```
-3. Copy `.env.example` to `.env.local` and add your API keys:
+3. Create a `.env.local` file in the root directory and add your API keys:
    ```
    TOGETHER_API_KEY=your_api_key_here
-   NEXT_PUBLIC_AUTH0_DOMAIN=your_auth0_domain_here
-   NEXT_PUBLIC_AUTH0_CLIENT_ID=your_auth0_client_id_here
+   REDIS_URL=your_redis_url_here  # Optional: defaults to localhost:6379
    ```
 
-### Auth0 Configuration
+### Setting up Redis
 
-1. Create a new application in Auth0 dashboard
-2. Configure the following URLs:
-   - Allowed Callback URLs: `http://localhost:3000/callback`
-   - Allowed Logout URLs: `http://localhost:3000`
-   - Allowed Web Origins: `http://localhost:3000`
-3. Get your Auth0 domain and client ID and add them to `.env.local`
+#### Local Development
+
+1. Install Redis on your machine:
+
+   - Windows: Use [Windows Subsystem for Linux (WSL)](https://redis.io/docs/getting-started/installation/install-redis-on-windows/) or [Redis for Windows](https://github.com/microsoftarchive/redis/releases)
+   - Mac: `brew install redis`
+   - Linux: `sudo apt-get install redis-server`
+
+2. Start Redis server:
+   - Windows (WSL): `sudo service redis-server start`
+   - Mac/Linux: `redis-server`
+
+#### Production
+
+For production, we recommend using a managed Redis service like:
+
+- Redis Cloud
+- Amazon ElastiCache
+- Azure Cache for Redis
+- Google Cloud Memorystore
 
 ### Running the Development Server
 
@@ -61,17 +64,12 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000) in your browser to use the application.
 
-## Deployment
-
-For detailed deployment instructions, see [DEPLOYMENT.md](DEPLOYMENT.md).
-
 ## How to Use
 
-1. Sign in with your account
-2. Click the upload area or drag and drop a body photo
-3. Review the image preview
-4. Click "Analyze Muscles"
-5. View the AI's analysis of weak or underdeveloped muscles, including:
+1. Click the upload area or drag and drop a body photo
+2. Review the image preview
+3. Click "Analyze Muscles"
+4. View the AI's analysis of weak or underdeveloped muscles, including:
    - Specific muscle groups that need work
    - Development rating on a scale of 1-10
    - Recommended exercises for improvement
@@ -91,17 +89,14 @@ The analysis is processed through a secure API endpoint, with all processing don
 - Error handling: Graceful handling of API and processing errors
 - Secure data handling: No permanent storage of user images
 
-## Privacy and Terms
+## Technology Stack
 
-- [Terms of Service](/terms)
-- [Privacy Policy](/privacy)
+- Next.js with TypeScript
+- Tailwind CSS for styling
+- Together AI's Llama 3.2 Vision model for image analysis
+- Redis for efficient caching
+- Auth0 for authentication
 
 ## License
 
 This project is licensed under the MIT License.
-
-## Acknowledgements
-
-- Together AI for providing the vision model API
-- Auth0 for authentication services
-- Vercel for hosting services

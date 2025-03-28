@@ -10,6 +10,7 @@ export default function ProtectedRoute({
   children: React.ReactNode;
 }) {
   const { isAuthenticated, isLoading, loginWithRedirect } = useAuth0();
+  const router = useRouter();
 
   useEffect(() => {
     const checkAuth = async () => {

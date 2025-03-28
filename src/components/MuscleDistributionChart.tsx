@@ -14,18 +14,6 @@ interface MuscleDistributionChartProps {
   data: MuscleData[];
 }
 
-interface LabelProps {
-  cx: number;
-  cy: number;
-  midAngle: number;
-  innerRadius: number;
-  outerRadius: number;
-  percent: number;
-  index: number;
-  name: string;
-  [key: string]: any;
-}
-
 const MuscleDistributionChart = ({ data }: MuscleDistributionChartProps) => {
   // Calculate muscle distribution by strength categories
   const weakMuscles = data.filter((m) => m.rating <= 3).length;
@@ -50,7 +38,7 @@ const MuscleDistributionChart = ({ data }: MuscleDistributionChartProps) => {
     percent,
     index,
     name,
-  }: LabelProps) => {
+  }: any) => {
     const RADIAN = Math.PI / 180;
     const radius = 25 + innerRadius + (outerRadius - innerRadius);
     const x = cx + radius * Math.cos(-midAngle * RADIAN);

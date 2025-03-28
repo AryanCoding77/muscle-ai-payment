@@ -3,11 +3,6 @@
 import { Auth0Provider } from "@auth0/auth0-react";
 import { useRouter } from "next/navigation";
 
-interface AppState {
-  returnTo?: string;
-  [key: string]: any;
-}
-
 export default function Auth0ProviderWithNavigate({
   children,
 }: {
@@ -18,7 +13,7 @@ export default function Auth0ProviderWithNavigate({
   const domain = process.env.NEXT_PUBLIC_AUTH0_DOMAIN!;
   const clientId = process.env.NEXT_PUBLIC_AUTH0_CLIENT_ID!;
 
-  const onRedirectCallback = (appState?: AppState) => {
+  const onRedirectCallback = (appState: any) => {
     router.push(appState?.returnTo || "/main");
   };
 
