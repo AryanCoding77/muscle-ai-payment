@@ -1,0 +1,15 @@
+{
+  "framework": "nextjs",
+  "buildCommand": "npm run build",
+  "outputDirectory": ".next",
+  "images": {
+    "domains": ["lh3.googleusercontent.com", "s.gravatar.com"],
+    "sizes": [16, 32, 48, 64, 96, 128, 256, 384],
+    "remotePatterns": [
+      {
+        "protocol": "https",
+        "hostname": "**"
+      }
+    ]
+  }
+} 

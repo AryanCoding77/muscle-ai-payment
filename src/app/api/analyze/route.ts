@@ -1,12 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import Together from "together-ai";
+import {
+  generateImageHash,
+  getCachedAnalysis,
+  setCachedAnalysis,
+} from "../../../utils/cache";
 
 // Initialize Together client with your API key
 const together = new Together(process.env.TOGETHER_API_KEY || "");
 
 // Add a simple rate limiter
-const RATE_LIMIT_WINDOW = 30000; // 30 seconds in milliseconds (reduced from 60s)
-const MAX_REQUESTS_PER_WINDOW = 10; // Maximum 10 requests per window (increased from 5)
+const RATE_LIMIT_WINDOW = 30000; // 30 seconds in milliseconds
+const MAX_REQUESTS_PER_WINDOW = 10; // Maximum 10 requests per window
 const requestTimestamps: number[] = [];
 
 // Retry configuration
@@ -17,7 +22,6 @@ export async function POST(request: NextRequest) {
   try {
     // Implement basic rate limiting
     const now = Date.now();
-    // Remove timestamps older than the window
     while (
       requestTimestamps.length > 0 &&
       requestTimestamps[0] < now - RATE_LIMIT_WINDOW
@@ -25,7 +29,6 @@ export async function POST(request: NextRequest) {
       requestTimestamps.shift();
     }
 
-    // Check if rate limit exceeded
     if (requestTimestamps.length >= MAX_REQUESTS_PER_WINDOW) {
       return NextResponse.json(
         {
@@ -36,7 +39,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Add current timestamp to the list
     requestTimestamps.push(now);
 
     // Get the image data from the request
@@ -50,9 +52,24 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Convert the file to base64
+    // Convert the file to buffer for hashing
     const arrayBuffer = await imageFile.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
+
+    // Generate image hash
+    const imageHash = await generateImageHash(buffer);
+
+    // Check cache first
+    const cachedResult = await getCachedAnalysis(imageHash);
+    if (cachedResult) {
+      console.log("Cache hit! Returning cached analysis");
+      return NextResponse.json({
+        analysis: cachedResult,
+        cached: true,
+      });
+    }
+
+    // Convert to base64 for API request
     const base64Image = buffer.toString("base64");
 
     console.log("Sending request to analyze image...");
@@ -95,14 +112,6 @@ export async function POST(request: NextRequest) {
       "Muscles not visible in this image:"
       
       List all major muscle groups that CANNOT be assessed from this angle. Be thorough and include all standard muscle groups not visible in the current view.
-      
-      Example for a back view photo:
-      "Muscles not visible in this image:
-      - Chest (Pectorals)
-      - Abs
-      - Front Deltoids
-      - Biceps (front of arms)
-      - Quadriceps (front of thighs)"
     `;
 
     // Implementation of a retry mechanism
@@ -119,7 +128,7 @@ export async function POST(request: NextRequest) {
 
         // Use the chat completions API with vision capabilities
         const response = await together.chat.completions.create({
-          model: "meta-llama/Llama-3.2-11B-Vision-Instruct-Turbo", // Using the correct model name
+          model: "meta-llama/Llama-3.2-11B-Vision-Instruct-Turbo",
           messages: [
             {
               role: "user",
@@ -140,7 +149,7 @@ export async function POST(request: NextRequest) {
 
         console.log("Response received");
 
-        // Extract and return the analysis results
+        // Extract and cache the analysis results
         if (
           response.choices &&
           response.choices.length > 0 &&
@@ -148,127 +157,12 @@ export async function POST(request: NextRequest) {
         ) {
           const content = response.choices[0].message.content;
 
-          // Check if the response contains ANY kind of safety filter or policy messages
-          // Expanded list of safety filter keywords
-          const safetyTerms = [
-            "ethical",
-            "moral",
-            "sexual",
-            "exploitation",
-            "minor",
-            "child",
-            "illegal",
-            "inappropriate",
-            "policy",
-            "policies",
-            "standards",
-            "pornographic",
-            "nudity",
-            "explicit",
-            "prostitution",
-            "cannot help",
-            "can't help",
-            "unable to",
-            "apologize",
-            "sorry",
-            "against",
-            "rights",
-            "comply",
-            "violation",
-            "consent",
-            "terms of service",
-            "tos",
-            "won't",
-            "will not",
-            "prohibited",
-            "activities",
-            "ethical concerns",
-            "assist you with this request",
-            "cannot assist",
-            "I cannot",
-          ];
-
-          // Check for low quality image specific error patterns
-          if (
-            content.includes("too pixelated") ||
-            content.includes("cannot provide a detailed analysis") ||
-            content.includes("I can't provide") ||
-            content.includes("Alternative:") ||
-            content.includes("high-resolution image")
-          ) {
-            console.log("Low quality image detected");
-
-            return NextResponse.json(
-              {
-                error:
-                  "The image quality is too low for accurate muscle analysis. Please upload a clearer, higher resolution image.",
-                isImageQuality: true,
-              },
-              { status: 400 }
-            );
-          }
-
-          // Check if any of the safety terms appear in the content
-          const hasSafetyTerms = safetyTerms.some((term) =>
-            content.toLowerCase().includes(term.toLowerCase())
-          );
-
-          if (hasSafetyTerms) {
-            console.error("Safety filter incorrectly triggered:", content);
-
-            // Return a realistic analysis based on the image of a well-built male with developed muscles
-            return NextResponse.json({
-              analysis: `I've analyzed the visible muscles in your image. Here's my assessment:
-
-1. **Chest (Pectorals)**: Development: 9/10
-* Exercises to improve:
-* Incline Bench Press
-* Cable Crossovers
-* Weighted Dips
-
-2. **Shoulders (Deltoids)**: Development: 8.5/10
-* Exercises to improve:
-* Military Press
-* Lateral Raises
-* Front Raises
-
-3. **Biceps**: Development: 8.5/10
-* Exercises to improve:
-* EZ Bar Curls
-* Hammer Curls
-* Incline Dumbbell Curls
-
-4. **Abs (Rectus Abdominis)**: Development: 9/10
-* Exercises to improve:
-* Hanging Leg Raises
-* Weighted Crunches
-* Ab Rollouts
-
-5. **Serratus Anterior**: Development: 8/10
-* Exercises to improve:
-* Serratus Punches
-* Incline Dumbbell Pull-Overs
-* Pushup Plus
-
-6. **Forearms**: Development: 7.5/10
-* Exercises to improve:
-* Farmer's Walks
-* Reverse Curls
-* Wrist Curls
-
-Muscles not visible in this image:
-- Back (Latissimus Dorsi)
-- Trapezius (Upper Back)
-- Rear Deltoids
-- Hamstrings
-- Calves
-- Glutes
-- Quadriceps (not fully visible)`,
-            });
-          }
+          // Store the result in cache
+          await setCachedAnalysis(imageHash, content);
 
           return NextResponse.json({
             analysis: content,
+            cached: false,
           });
         } else {
           console.error("Unexpected response format:", response);
@@ -284,65 +178,21 @@ Muscles not visible in this image:
         );
         lastError = modelError;
 
-        // Only continue to retry if we haven't reached max retries
         if (retryCount < MAX_RETRIES) {
           continue;
         }
       }
     }
 
-    // If we've exhausted all retries or there was an error, return the fallback
-    console.error("All retry attempts failed, using fallback analysis");
-
-    // Provide fallback analysis for a well-built male with developed muscles
-    return NextResponse.json({
-      analysis: `I've analyzed the visible muscles in your image. Here's my assessment:
-
-1. **Chest (Pectorals)**: Development: 9/10
-* Exercises to improve:
-* Incline Bench Press
-* Cable Crossovers
-* Weighted Dips
-
-2. **Shoulders (Deltoids)**: Development: 8.5/10
-* Exercises to improve:
-* Military Press
-* Lateral Raises
-* Front Raises
-
-3. **Biceps**: Development: 8.5/10
-* Exercises to improve:
-* EZ Bar Curls
-* Hammer Curls
-* Incline Dumbbell Curls
-
-4. **Abs (Rectus Abdominis)**: Development: 9/10
-* Exercises to improve:
-* Hanging Leg Raises
-* Weighted Crunches
-* Ab Rollouts
-
-5. **Serratus Anterior**: Development: 8/10
-* Exercises to improve:
-* Serratus Punches
-* Incline Dumbbell Pull-Overs
-* Pushup Plus
-
-6. **Forearms**: Development: 7.5/10
-* Exercises to improve:
-* Farmer's Walks
-* Reverse Curls
-* Wrist Curls
-
-Muscles not visible in this image:
-- Back (Latissimus Dorsi)
-- Trapezius (Upper Back)
-- Rear Deltoids
-- Hamstrings
-- Calves
-- Glutes
-- Quadriceps (not fully visible)`,
-    });
+    // If we've exhausted all retries, return an error
+    console.error("All retry attempts failed");
+    return NextResponse.json(
+      {
+        error:
+          "Failed to analyze image: " + (lastError?.message || "Unknown error"),
+      },
+      { status: 500 }
+    );
   } catch (error) {
     console.error("Error processing image:", error);
     return NextResponse.json(

@@ -1,1481 +1,1834 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { motion, useScroll, useTransform } from "framer-motion";
 import Image from "next/image";
-import { MuscleData } from "../types/muscle";
-import MuscleRadarChart from "../components/MuscleRadarChart";
-import MuscleBarChart from "../components/MuscleBarChart";
-import MuscleDistributionChart from "../components/MuscleDistributionChart";
-import MuscleVisualizer from "../components/MuscleVisualizer";
-import ExerciseSection from "../components/ExerciseSection";
+import Link from "next/link";
+import { useState, useEffect, ReactNode } from "react";
 
-export default function Home() {
-  const [selectedImage, setSelectedImage] = useState<string | null>(null);
-  const [analysis, setAnalysis] = useState<string | null>(null);
-  const [parsedMuscles, setParsedMuscles] = useState<MuscleData[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const [activeChart, setActiveChart] = useState<"radar" | "bar">("radar");
-  const [nonVisibleMuscles, setNonVisibleMuscles] = useState<string[]>([]);
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const lastAnalysisTime = useRef<number>(0);
+const fadeIn = {
+  hidden: { opacity: 0, y: 20 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.6 },
+  },
+};
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+const staggerContainer = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.2,
+    },
+  },
+};
 
-    // Reset states
-    setAnalysis(null);
-    setError(null);
-    setParsedMuscles([]);
-    setNonVisibleMuscles([]);
-    setIsAnalyzing(false);
-    lastAnalysisTime.current = 0; // Reset the cooldown timer for a new image
+const buttonHover = {
+  rest: { scale: 1 },
+  hover: {
+    scale: 1.05,
+    transition: {
+      duration: 0.3,
+      ease: "easeInOut",
+    },
+  },
+};
 
-    // Check file type
-    if (!file.type.startsWith("image/")) {
-      setError("Please upload an image file");
-      return;
-    }
+// Create a ClientOnly component that renders children only on the client side
+const ClientOnly = ({ children }: { children: ReactNode }) => {
+  const [isClient, setIsClient] = useState(false);
 
-    // Display the selected image
-    const reader = new FileReader();
-    reader.onload = () => {
-      setSelectedImage(reader.result as string);
-    };
-    reader.readAsDataURL(file);
-  };
-
-  const analyzeImage = async () => {
-    if (!fileInputRef.current?.files?.[0]) {
-      setError("Please select an image first");
-      return;
-    }
-
-    // Check if an analysis is already in progress
-    if (isAnalyzing) {
-      setError("An analysis is already in progress. Please wait.");
-      return;
-    }
-
-    // Implement a simple cooldown to prevent rapid fire requests
-    const now = Date.now();
-    const timeSinceLastAnalysis = now - lastAnalysisTime.current;
-    if (timeSinceLastAnalysis < 1000) {
-      // 1 second cooldown instead of 3
-      // 3 seconds cooldown
-      setError(
-        `Please wait ${Math.ceil(
-          (1000 - timeSinceLastAnalysis) / 1000
-        )} seconds before analyzing again.`
-      );
-      return;
-    }
-
-    try {
-      setIsLoading(true);
-      setIsAnalyzing(true);
-      setError(null);
-      lastAnalysisTime.current = now;
-
-      const formData = new FormData();
-      formData.append("image", fileInputRef.current.files[0]);
-
-      const response = await fetch("/api/analyze", {
-        method: "POST",
-        body: formData,
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        if (response.status === 429) {
-          // Handle rate limiting
-          throw new Error(
-            data.error ||
-              "Too many requests. Please wait a moment before trying again."
-          );
-        } else if (data.isImageQuality) {
-          // Handle image quality issues
-          throw new Error(data.error);
-        } else {
-          throw new Error(data.error || "Failed to analyze image");
-        }
-      }
-
-      if (!data.analysis) {
-        throw new Error("No analysis data returned from model");
-      }
-
-      setAnalysis(data.analysis);
-    } catch (err) {
-      console.error("Error:", err);
-      setError(
-        err instanceof Error ? err.message : "An unknown error occurred"
-      );
-    } finally {
-      setIsLoading(false);
-      setIsAnalyzing(false);
-    }
-  };
-
-  // Parse the text analysis into structured data for visualization
   useEffect(() => {
-    if (!analysis) return;
+    setIsClient(true);
+  }, []);
 
-    try {
-      // Extract a list of muscles that cannot be assessed from this angle
-      const nonVisibleRegex =
-        /(?:cannot|can't|not possible to|unable to|not visible|impossible to)\s+(?:assess|evaluate|analyze|see|view|rate|determine)\s+(?:the\s+)?([^.,]+)(?:\s+muscles?)?/gi;
+  return isClient ? children : null;
+};
 
-      let nonVisibleList: string[] = [];
+export default function HomePage() {
+  const router = useRouter();
+  const { scrollY } = useScroll();
+  const [isScrolled, setIsScrolled] = useState(false);
+  const [showScrollTop, setShowScrollTop] = useState(false);
 
-      // Look for the specific section for non-visible muscles
-      const sectionMatch = analysis.match(
-        /muscles not visible in this image:?([\s\S]*?)(?=\d+\.|$)/i
-      );
+  // Transform navbar background opacity based on scroll position
+  const navbarBgOpacity = useTransform(scrollY, [0, 50], [0, 1]);
 
-      if (sectionMatch && sectionMatch[1]) {
-        // Extract from the dedicated section - this is the preferred method
-        const muscleListItems = sectionMatch[1].match(/[-•*]\s*([^-\n]+)/g);
-        if (muscleListItems) {
-          muscleListItems.forEach((item) => {
-            const cleanedMuscle = item.replace(/[-•*]\s*/, "").trim();
-            if (
-              cleanedMuscle &&
-              cleanedMuscle !== "*" &&
-              !nonVisibleList.includes(cleanedMuscle)
-            ) {
-              nonVisibleList.push(cleanedMuscle);
-            }
-          });
-        } else {
-          // If no bullet points, try line by line
-          const muscleLines = sectionMatch[1]
-            .split("\n")
-            .filter((line) => line.trim().length > 0);
-          muscleLines.forEach((line) => {
-            const cleanedMuscle = line.trim();
-            if (
-              cleanedMuscle &&
-              cleanedMuscle !== "*" &&
-              !nonVisibleList.includes(cleanedMuscle)
-            ) {
-              nonVisibleList.push(cleanedMuscle);
-            }
-          });
-        }
+  // Check if page has scrolled to update navbar appearance
+  useEffect(() => {
+    const handleScroll = () => {
+      if (window.scrollY > 10) {
+        setIsScrolled(true);
       } else {
-        // Fallback to scanning the text for mentions of non-visible muscles
-        const notVisibleMatches = [...analysis.matchAll(nonVisibleRegex)];
-
-        notVisibleMatches.forEach((match) => {
-          if (match[1]) {
-            nonVisibleList.push(match[1].trim());
-          }
-        });
-
-        // Look for explicit statements about what can't be seen
-        if (
-          analysis.includes("not visible in this image") ||
-          analysis.includes("cannot be assessed from this angle")
-        ) {
-          const notVisibleSection = analysis.split(
-            /muscles (?:that )?(?:are )?(?:not visible|cannot be assessed)/i
-          )[1];
-
-          if (notVisibleSection) {
-            const muscleList = notVisibleSection.match(
-              /([A-Za-z\s()]+)(?:,|\.|\n|and)/g
-            );
-
-            if (muscleList) {
-              muscleList.forEach((muscle) => {
-                const cleanedMuscle = muscle.replace(/,|\.|and|\n/g, "").trim();
-                if (cleanedMuscle && !nonVisibleList.includes(cleanedMuscle)) {
-                  nonVisibleList.push(cleanedMuscle);
-                }
-              });
-            }
-          }
-        }
+        setIsScrolled(false);
       }
 
-      // Filter out redundancies and clean up muscle names
-      nonVisibleList = nonVisibleList
-        .map((muscle) => muscle.replace(/^[-*•\s]+/, "").trim())
-        .filter(
-          (muscle, index, self) =>
-            muscle.length > 0 &&
-            muscle !== "*" &&
-            !muscle.match(/^[*-•]$/) && // Filter out single characters that are just markers
-            self.indexOf(muscle) === index
-        );
-
-      setNonVisibleMuscles(nonVisibleList);
-
-      // Simple regex-based parsing of the muscle data
-      const muscleRegex =
-        /\d+\.\s+\*\*([^*:]+)(?:\*\*)?:\s*(?:The .+?)?(?:Development:|Rating:)?\s*(\d+)\/10/g;
-      const exerciseRegex =
-        /\*\s+(?:Exercises to improve:|Suggested exercises:)(.*?)(?=\d+\.|$|\n\n)/gs;
-
-      const muscles: MuscleData[] = [];
-      let match;
-
-      // Clone the analysis for regex operations
-      let text = analysis;
-
-      while ((match = muscleRegex.exec(text)) !== null) {
-        const fullMatch = match[0];
-        const muscleName = match[1].trim();
-        const rating = parseInt(match[2], 10);
-
-        // Get section text around this match to find exercises
-        const sectionStart = text.lastIndexOf("**", match.index);
-        const sectionEnd = text.indexOf("**", match.index + fullMatch.length);
-        const section = text.substring(
-          sectionStart !== -1 ? sectionStart : 0,
-          sectionEnd !== -1 ? sectionEnd + 100 : text.length
-        );
-
-        // Find exercises in this section
-        const exerciseLines = section
-          .split("\n")
-          .filter(
-            (line) =>
-              line.includes("* Exercises to improve:") ||
-              line.includes("* Suggested exercises:")
-          );
-
-        let exercises: string[] = [];
-        if (exerciseLines.length > 0) {
-          const exercisesText = exerciseLines[0];
-          exercises = exercisesText
-            .replace(/.*?(?:Exercises to improve:|Suggested exercises:)/, "")
-            .split(/,/)
-            .map((ex) => ex.trim())
-            .filter((ex) => ex.length > 0);
-        }
-
-        muscles.push({
-          name: muscleName,
-          rating,
-          exercises,
-        });
-      }
-
-      // If regex fails, try another approach (simple line-by-line parsing)
-      if (muscles.length === 0) {
-        const lines = analysis.split("\n");
-        let currentMuscle: Partial<MuscleData> = {};
-
-        for (const line of lines) {
-          if (line.match(/^\d+\.\s+([^:]+):/)) {
-            // Save previous muscle if it exists
-            if (currentMuscle.name && currentMuscle.rating) {
-              muscles.push({
-                name: currentMuscle.name,
-                rating: currentMuscle.rating,
-                exercises: currentMuscle.exercises || [],
-              });
-            }
-
-            // Start new muscle
-            currentMuscle = {
-              name: line.replace(/^\d+\.\s+([^:]+):.*$/, "$1").trim(),
-              exercises: [],
-            };
-          } else if (line.match(/rating|development/i) && currentMuscle.name) {
-            const ratingMatch = line.match(/(\d+)\s*\/\s*10/);
-            if (ratingMatch) {
-              currentMuscle.rating = parseInt(ratingMatch[1], 10);
-            }
-          } else if (line.match(/suggested exercises/i) && currentMuscle.name) {
-            currentMuscle.exercises = currentMuscle.exercises || [];
-          } else if (line.match(/^\s*[•\-\*]\s+/) && currentMuscle.exercises) {
-            currentMuscle.exercises.push(
-              line.replace(/^\s*[•\-\*]\s+/, "").trim()
-            );
-          }
-        }
-
-        // Add the last muscle if it exists
-        if (currentMuscle.name && currentMuscle.rating) {
-          muscles.push({
-            name: currentMuscle.name,
-            rating: currentMuscle.rating,
-            exercises: currentMuscle.exercises || [],
-          });
-        }
-      }
-
-      // If the first approach fails, try a more structured approach for the specific format
-      if (muscles.length === 0) {
-        // Look for sections by body region
-        const bodySections = analysis
-          .split(/\*\*([^*]+):\*\*/g)
-          .filter(
-            (section) =>
-              section.trim().length > 0 &&
-              !section.includes("Based on the image")
-          );
-
-        for (let i = 0; i < bodySections.length; i += 2) {
-          // Skip if we're at the end of the array or if this is not a section title
-          if (i + 1 >= bodySections.length) continue;
-
-          const sectionContent = bodySections[i + 1];
-
-          // Extract muscles in this section using a different regex pattern
-          const sectionMuscleRegex =
-            /\d+\.\s+\*\*([^*:]+)\*\*\s+([^.]*).*?Development:\s*(\d+)\/10[^*]*/g;
-          let muscleMatch;
-
-          while (
-            (muscleMatch = sectionMuscleRegex.exec(sectionContent)) !== null
-          ) {
-            const muscleName = muscleMatch[1].trim();
-            const description = muscleMatch[2].trim();
-            const rating = parseInt(muscleMatch[3], 10);
-
-            // Extract exercises
-            const exerciseMatch = sectionContent
-              .substring(muscleMatch.index, muscleMatch.index + 300)
-              .match(/\*\s+Exercises to improve:([^*]*)/);
-
-            let exercises: string[] = [];
-            if (exerciseMatch && exerciseMatch[1]) {
-              exercises = exerciseMatch[1]
-                .split(",")
-                .map((ex) => ex.trim())
-                .filter((ex) => ex.length > 0);
-            }
-
-            muscles.push({
-              name: muscleName,
-              rating,
-              exercises,
-            });
-          }
-        }
-      }
-
-      // If everything else fails, try a line-by-line approach
-      if (muscles.length === 0) {
-        console.log("Falling back to line-by-line parsing");
-        const lines = analysis.split("\n");
-        let currentMuscle: Partial<MuscleData> = {};
-
-        for (const line of lines) {
-          // Check if line contains a muscle name with rating
-          const muscleRatingMatch = line.match(
-            /\d+\.\s+\*\*([^*:]+)\*\*.*?(\d+)\/10/
-          );
-          if (muscleRatingMatch) {
-            // Save the previous muscle if it exists
-            if (currentMuscle.name && currentMuscle.rating) {
-              muscles.push({
-                name: currentMuscle.name,
-                rating: currentMuscle.rating,
-                exercises: currentMuscle.exercises || [],
-              });
-            }
-
-            // Start a new muscle
-            currentMuscle = {
-              name: muscleRatingMatch[1].trim(),
-              rating: parseInt(muscleRatingMatch[2], 10),
-              exercises: [],
-            };
-          }
-          // Look for exercise lines
-          else if (
-            line.includes("Exercises to improve:") &&
-            currentMuscle.name
-          ) {
-            const exerciseText = line.replace(/.*Exercises to improve:\s*/, "");
-            currentMuscle.exercises = exerciseText
-              .split(",")
-              .map((ex) => ex.trim())
-              .filter((ex) => ex.length > 0);
-          }
-        }
-
-        // Add the last muscle if it exists
-        if (currentMuscle.name && currentMuscle.rating) {
-          muscles.push({
-            name: currentMuscle.name,
-            rating: currentMuscle.rating,
-            exercises: currentMuscle.exercises || [],
-          });
-        }
-      }
-
-      // Final fallback: direct pattern matching for muscle names and ratings
-      if (muscles.length === 0) {
-        console.log("Using final fallback pattern matching");
-
-        // Define common muscle names to look for
-        const commonMuscles = [
-          "Biceps",
-          "Triceps",
-          "Pectorals",
-          "Chest",
-          "Deltoids",
-          "Shoulders",
-          "Quadriceps",
-          "Quads",
-          "Hamstrings",
-          "Calves",
-          "Abdominals",
-          "Abs",
-          "Obliques",
-          "Latissimus",
-          "Lats",
-          "Trapezius",
-          "Traps",
-          "Rhomboids",
-          "Forearms",
-          "Glutes",
-          "Erector Spinae",
-          "Lower Back",
-        ];
-
-        // Look for these specific muscles and their ratings
-        for (const muscle of commonMuscles) {
-          // Create a regex to find this muscle name and a rating near it
-          const muscleRegex = new RegExp(
-            `(${muscle})[^\\d]+(\\d+)\\s*\\/\\s*10`,
-            "i"
-          );
-          const match = analysis.match(muscleRegex);
-
-          if (match) {
-            const muscleName = match[1];
-            const rating = parseInt(match[2], 10);
-
-            // Check if we already have this muscle
-            if (
-              !muscles.some(
-                (m) => m.name.toLowerCase() === muscleName.toLowerCase()
-              )
-            ) {
-              muscles.push({
-                name: muscleName,
-                rating,
-                exercises: [], // We won't try to parse exercises in this fallback
-              });
-            }
-          }
-        }
-
-        // If we found some muscles, log it
-        if (muscles.length > 0) {
-          console.log("Extracted muscles using final fallback:", muscles);
-        }
-      }
-
-      // Try a specific parser for the exact format in the example
-      if (muscles.length === 0) {
-        console.log("Trying example-specific format parser");
-
-        const lines = analysis.split("\n");
-        let currentMuscle: Partial<MuscleData> = {};
-        let currentExercises: string[] = [];
-
-        for (let i = 0; i < lines.length; i++) {
-          const line = lines[i];
-
-          // Check for muscle name and rating pattern: "1. **Biceps:** Development: 6/10"
-          const muscleMatch = line.match(
-            /\d+\.\s+\*\*([^*:]+)\*\*.*?Development:\s*(\d+)\/10/
-          );
-          if (muscleMatch) {
-            // Save previous muscle if exists
-            if (currentMuscle.name && currentMuscle.rating) {
-              muscles.push({
-                name: currentMuscle.name,
-                rating: currentMuscle.rating,
-                exercises: [...currentExercises],
-              });
-              currentExercises = [];
-            }
-
-            currentMuscle = {
-              name: muscleMatch[1].trim(),
-              rating: parseInt(muscleMatch[2], 10),
-            };
-          }
-          // If no muscle match, check for exercise lines
-          else if (
-            line.includes("* Exercises to improve:") &&
-            currentMuscle.name
-          ) {
-            // Extract the exercises text
-            const exercisesText = line.replace(
-              /\*\s+Exercises to improve:\s*/,
-              ""
-            );
-            currentExercises = exercisesText
-              .split(",")
-              .map((ex) => ex.trim())
-              .filter((ex) => ex.length > 0);
-          }
-        }
-
-        // Don't forget to add the last muscle
-        if (currentMuscle.name && currentMuscle.rating) {
-          muscles.push({
-            name: currentMuscle.name,
-            rating: currentMuscle.rating,
-            exercises: [...currentExercises],
-          });
-        }
-      }
-
-      // Add specific parser for the format in the screenshot
-      if (muscles.length === 0) {
-        console.log("Trying screenshot-specific format parser");
-
-        // Split the text into lines for easier processing
-        const lines = analysis
-          .split("\n")
-          .filter((line) => line.trim().length > 0);
-
-        for (let i = 0; i < lines.length; i++) {
-          const line = lines[i];
-
-          // Look for lines that contain a number, muscle name, and rating pattern
-          // Format: "1. **Biceps:** The biceps seem... Development: 6/10"
-          if (/^\d+\.\s+/.test(line) && line.includes("/10")) {
-            // Extract muscle name - it's between ** markers or at the start of the numbered item
-            let muscleName = "";
-            const nameMatch = line.match(
-              /\d+\.\s+(?:\*\*)?([^*:]+?)(?:\*\*)?:/
-            );
-            if (nameMatch) {
-              muscleName = nameMatch[1].trim();
-            }
-
-            // Extract rating - it's a number followed by /10
-            let rating = 0;
-            const ratingMatch = line.match(/(\d+)\/10/);
-            if (ratingMatch) {
-              rating = parseInt(ratingMatch[1], 10);
-            }
-
-            // If we have both a name and rating, look for exercises in the next line
-            if (muscleName && rating && i + 1 < lines.length) {
-              const nextLine = lines[i + 1];
-              let exercises: string[] = [];
-
-              // Exercises are usually in the line that starts with *
-              if (
-                nextLine.startsWith("*") &&
-                (nextLine.includes("Exercises to improve:") ||
-                  nextLine.includes("Suggested exercises:"))
-              ) {
-                const exercisesText = nextLine.replace(
-                  /.*?(?:Exercises to improve:|Suggested exercises:)\s*/,
-                  ""
-                );
-                exercises = exercisesText
-                  .split(/,|;/)
-                  .map((ex) => ex.trim())
-                  .filter((ex) => ex.length > 0);
-              }
-
-              muscles.push({
-                name: muscleName,
-                rating,
-                exercises,
-              });
-            }
-          }
-        }
-      }
-
-      // Plain text format parser (no markdown)
-      if (muscles.length === 0) {
-        console.log("Trying plain text format parser");
-
-        const lines = analysis
-          .split("\n")
-          .filter((line) => line.trim().length > 0);
-        let currentMuscle: Partial<MuscleData> = {};
-
-        for (let i = 0; i < lines.length; i++) {
-          const line = lines[i].trim();
-
-          // Check for lines with numbered muscle patterns
-          if (/^\d+\.\s+/.test(line)) {
-            // Find muscle name followed by rating
-            const plainTextMatch = line.match(
-              /\d+\.\s+([^:]+)(?::[^0-9]*|[^0-9]*)(\d+)\s*\/\s*10/
-            );
-
-            if (plainTextMatch) {
-              // Save previous muscle if it exists
-              if (currentMuscle.name && currentMuscle.rating) {
-                muscles.push({
-                  name: currentMuscle.name,
-                  rating: currentMuscle.rating,
-                  exercises: currentMuscle.exercises || [],
-                });
-              }
-
-              // Extract muscle name and rating
-              const muscleName = plainTextMatch[1].trim();
-              const rating = parseInt(plainTextMatch[2], 10);
-
-              currentMuscle = {
-                name: muscleName,
-                rating: rating,
-                exercises: [],
-              };
-            }
-          }
-          // Check for lines with exercise suggestions
-          else if (currentMuscle.name && /exercises/i.test(line)) {
-            // Extract everything after "exercises" or ":"
-            const exerciseText = line.replace(/.*?(?:exercises|:)\s*/i, "");
-
-            if (exerciseText.trim().length > 0) {
-              currentMuscle.exercises = exerciseText
-                .split(/,|;/)
-                .map((ex) => ex.trim())
-                .filter((ex) => ex.length > 0);
-            }
-          }
-        }
-
-        // Don't forget to add the last muscle
-        if (currentMuscle.name && currentMuscle.rating) {
-          muscles.push({
-            name: currentMuscle.name,
-            rating: currentMuscle.rating,
-            exercises: currentMuscle.exercises || [],
-          });
-        }
-      }
-
-      // Log the final result
-      console.log("Total muscles parsed:", muscles.length);
-      if (muscles.length > 0) {
-        console.log("Sample muscle data:", muscles[0]);
+      // Show scroll to top button when user has scrolled down a bit
+      if (window.scrollY > 500) {
+        setShowScrollTop(true);
       } else {
-        console.error("Could not parse any muscle data from the analysis text");
+        setShowScrollTop(false);
       }
+    };
 
-      setParsedMuscles(muscles);
-    } catch (err) {
-      console.error("Error parsing muscle data:", err);
-    }
-  }, [analysis]);
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
-  // Get sorted muscles by rating (ascending)
-  const getSortedMuscles = (muscles: MuscleData[]): MuscleData[] => {
-    return [...muscles].sort((a, b) => a.rating - b.rating);
-  };
-
-  // Get muscles with highest ratings (rating > 7)
-  const getStrongMuscles = (muscles: MuscleData[]) => {
-    return muscles.filter((muscle) => muscle.rating > 7);
-  };
-
-  // Color for muscle rating bars
-  const getRatingColor = (rating: number): string => {
-    if (rating < 7) {
-      return "bg-red-500";
-    } else {
-      return "bg-green-500";
-    }
-  };
-
-  // Get background color class for muscle cards
-  const getBadgeClass = (rating: number): string => {
-    if (rating < 7) {
-      return "bg-red-50 border-red-200";
-    } else {
-      return "bg-green-50 border-green-200";
-    }
-  };
-
-  // Update the average rating calculation
-  const calculateAverageRating = (muscles: MuscleData[]): number => {
-    if (muscles.length === 0) return 0;
-    const sum = muscles.reduce((total, muscle) => total + muscle.rating, 0);
-    return Math.round((sum / muscles.length) * 10) / 10; // Round to 1 decimal place
+  // Function to scroll to top smoothly
+  const scrollToTop = () => {
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth",
+    });
   };
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-between p-6 md:p-24 bg-gray-50">
-      <div className="z-10 max-w-5xl w-full items-center justify-center text-sm flex flex-col">
-        <h1 className="text-4xl font-bold mb-6 text-center text-blue-800">
-          Muscle Analysis AI
-        </h1>
-        <p className="text-lg mb-8 text-center text-gray-800">
-          Upload a photo of your body to get an analysis of which muscles need
-          more work
-        </p>
+    <div className="bg-black text-white overflow-x-hidden">
+      {/* Floating Navbar */}
+      <motion.div className="fixed top-6 left-0 right-0 w-full z-50 px-4">
+        <motion.div
+          className="mx-auto max-w-7xl rounded-full transition-all duration-300 border border-gray-800"
+          style={{
+            backgroundColor: isScrolled
+              ? "rgba(0, 0, 0, 0.75)"
+              : "rgba(0, 0, 0, 0.4)",
+            backdropFilter: "blur(10px)",
+            boxShadow: isScrolled
+              ? "0 10px 30px -10px rgba(0, 0, 0, 0.5)"
+              : "0 4px 20px rgba(0, 0, 0, 0.2)",
+          }}
+        >
+          <div className="flex items-center justify-between px-6 py-3">
+            {/* Logo */}
+            <div className="flex items-center">
+              <div className="w-10 h-10 relative mr-2">
+                <svg viewBox="0 0 100 100" className="w-full h-full">
+                  {/* Horizontal bar */}
+                  <motion.rect
+                    x="25"
+                    y="45"
+                    width="50"
+                    height="10"
+                    fill="white"
+                    initial={{ scaleX: 0 }}
+                    animate={{ scaleX: 1 }}
+                    transition={{ duration: 0.6, ease: "easeInOut" }}
+                  />
 
-        {!selectedImage && !isLoading && (
-          <div className="flex justify-center mb-8">
-            <div className="max-w-md">
-              <img
-                src="/muscle-illustration.svg"
-                alt="Muscle Analysis Illustration"
-                className="h-48 mx-auto mb-4 opacity-80"
-                onError={(e) => {
-                  // Fallback if the SVG is not available
-                  e.currentTarget.src =
-                    "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiM0MzM4Y2EiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj48cGF0aCBkPSJNNiA4aDEydjhINnoiPjwvcGF0aD48cGF0aCBkPSJNMTggOGwzIDMtMyAzIj48L3BhdGg+PHBhdGggZD0iTTYgOGwtMy0zIDMtMyI+PC9wYXRoPjxwYXRoIGQ9Ik0xOCAyMFY4Ij48L3BhdGg+PHBhdGggZD0iTTYgMjBWOCI+PC9wYXRoPjwvc3ZnPg==";
-                  e.currentTarget.classList.remove("h-48");
-                  e.currentTarget.classList.add("h-24");
-                }}
-              />
-              <div className="text-center">
-                <h3 className="text-2xl font-semibold text-gray-800 mb-2">
-                  Ready to analyze your muscles
-                </h3>
-                <p className="text-gray-800 mb-4">
-                  Upload a clear photo showing your physique for a detailed
-                  muscle analysis
-                </p>
-                <div className="flex justify-center gap-6 text-sm text-gray-800">
-                  <div className="flex flex-col items-center">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="h-6 w-6 text-blue-500 mb-1"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"
-                      />
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"
-                      />
-                    </svg>
-                    <span>Upload photo</span>
-                  </div>
-                  <div className="flex flex-col items-center">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="h-6 w-6 text-blue-500 mb-1"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"
-                      />
-                    </svg>
-                    <span>Get analysis</span>
-                  </div>
-                  <div className="flex flex-col items-center">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="h-6 w-6 text-blue-500 mb-1"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M16 8v8m-4-5v5m-4-2v2m-2 4h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-                      />
-                    </svg>
-                    <span>View results</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
+                  {/* Left weight */}
+                  <motion.rect
+                    x="10"
+                    y="30"
+                    width="15"
+                    height="40"
+                    rx="5"
+                    fill="white"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{
+                      duration: 0.6,
+                      delay: 0.3,
+                      ease: "easeInOut",
+                    }}
+                  />
 
-        <div className="flex flex-col w-full max-w-2xl mb-8">
-          <div className="bg-white p-6 rounded-lg shadow-lg">
-            <h3 className="text-xl font-medium mb-4 text-gray-800">
-              Upload Your Photo
-            </h3>
-            <label
-              htmlFor="image-upload"
-              className="flex flex-col items-center justify-center w-full h-64 border-2 border-dashed rounded-lg cursor-pointer bg-blue-50 hover:bg-blue-100 border-blue-300 transition-all"
-            >
-              <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                <svg
-                  className="w-12 h-12 mb-4 text-blue-500"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
-                  ></path>
-                </svg>
-                <p className="mb-2 text-sm text-gray-800">
-                  <span className="font-semibold">Click to upload</span> or drag
-                  and drop
-                </p>
-                <p className="text-xs text-gray-800">
-                  PNG, JPG or GIF (Max 10MB)
-                </p>
-              </div>
-              <input
-                id="image-upload"
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={handleImageUpload}
-                ref={fileInputRef}
-              />
-            </label>
-          </div>
-        </div>
-
-        {selectedImage && (
-          <div className="mt-8 w-full max-w-2xl">
-            <div className="bg-white p-6 rounded-lg shadow-lg">
-              <h3 className="text-xl font-medium mb-4 text-gray-800">
-                Image Preview
-              </h3>
-              <div className="relative w-full h-[400px] mb-6 rounded-lg overflow-hidden border border-gray-200 bg-gray-100 shadow-inner">
-                <Image
-                  src={selectedImage}
-                  alt="Selected body image"
-                  fill
-                  className="object-contain"
-                />
-              </div>
-              <div className="flex justify-center">
-                <button
-                  onClick={analyzeImage}
-                  disabled={isLoading}
-                  className="px-8 py-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:bg-blue-400 shadow-md text-lg font-medium flex items-center"
-                >
-                  {isLoading ? (
-                    <>
-                      <svg
-                        className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
-                        xmlns="http://www.w3.org/2000/svg"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                      >
-                        <circle
-                          className="opacity-25"
-                          cx="12"
-                          cy="12"
-                          r="10"
-                          stroke="currentColor"
-                          strokeWidth="4"
-                        ></circle>
-                        <path
-                          className="opacity-75"
-                          fill="currentColor"
-                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                        ></path>
-                      </svg>
-                      Analyzing...
-                    </>
-                  ) : (
-                    <>
-                      <svg
-                        className="w-5 h-5 mr-2"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                        xmlns="http://www.w3.org/2000/svg"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth="2"
-                          d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"
-                        ></path>
-                      </svg>
-                      Analyze Muscles
-                    </>
-                  )}
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {isLoading && (
-          <div className="mt-6 p-6 bg-white rounded-lg shadow-lg">
-            <div className="flex flex-col items-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mb-4"></div>
-              <p className="text-lg font-medium text-gray-800">
-                Analyzing your image...
-              </p>
-              <p className="text-sm text-gray-800 mt-2 text-center max-w-md">
-                This may take up to 10-15 seconds as our AI examines your muscle
-                development. Please don't refresh the page or submit multiple
-                requests.
-              </p>
-            </div>
-          </div>
-        )}
-
-        {error && (
-          <div className="mt-6 p-6 bg-white rounded-lg shadow-lg">
-            <div className="flex items-start">
-              <div className="flex-shrink-0">
-                <svg
-                  className="h-6 w-6 text-red-500"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  {/* Right weight */}
+                  <motion.rect
+                    x="75"
+                    y="30"
+                    width="15"
+                    height="40"
+                    rx="5"
+                    fill="white"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{
+                      duration: 0.6,
+                      delay: 0.3,
+                      ease: "easeInOut",
+                    }}
                   />
                 </svg>
               </div>
-              <div className="ml-3">
-                <h3 className="text-lg font-medium text-red-800">Error</h3>
-                <div className="mt-2 text-red-700">
-                  <p>{error}</p>
-                  {error.includes("wait") ||
-                  error.includes("Too many requests") ? (
-                    <p className="mt-2 text-sm">
-                      The AI model has rate limits to prevent overuse. Please
-                      wait a moment before trying again.
-                    </p>
-                  ) : null}
-                  {error ===
-                  "An analysis is already in progress. Please wait." ? (
-                    <p className="mt-2 text-sm">
-                      Your previous analysis request is still being processed.
-                      Please be patient.
-                    </p>
-                  ) : null}
-                  {error.includes("image quality") ||
-                  error.includes("clearer, higher resolution") ? (
-                    <p className="mt-2 text-sm">
-                      Try uploading a photo with better lighting, less blur, and
-                      focused clearly on the subject. The AI needs to see muscle
-                      details clearly to analyze them properly.
-                    </p>
-                  ) : null}
-                </div>
-                {(error.includes("wait") ||
-                  error.includes("Too many requests") ||
-                  error ===
-                    "An analysis is already in progress. Please wait." ||
-                  error.includes("image quality") ||
-                  error.includes("clearer, higher resolution")) && (
-                  <button
-                    className="mt-3 px-4 py-2 bg-blue-100 text-blue-700 rounded-md hover:bg-blue-200 transition-colors text-sm"
-                    onClick={() => setError(null)}
-                  >
-                    Dismiss
-                  </button>
-                )}
-              </div>
+              <Link href="/" className="text-xl font-bold">
+                Muscle<span className="text-blue-500">AI</span>
+              </Link>
+            </div>
+
+            {/* Navigation Links - Desktop */}
+            <div className="hidden md:flex items-center space-x-8">
+              <Link
+                href="/products"
+                className="text-gray-300 hover:text-white transition-colors"
+              >
+                Products
+              </Link>
+              <Link
+                href="/docs"
+                className="text-gray-300 hover:text-white transition-colors"
+              >
+                Docs
+              </Link>
+              <Link
+                href="/solutions"
+                className="text-gray-300 hover:text-white transition-colors"
+              >
+                Solutions
+              </Link>
+              <Link
+                href="/about"
+                className="text-gray-300 hover:text-white transition-colors"
+              >
+                About
+              </Link>
+              <Link
+                href="/customers"
+                className="text-gray-300 hover:text-white transition-colors"
+              >
+                Customers
+              </Link>
+              <Link
+                href="/pricing"
+                className="text-gray-300 hover:text-white transition-colors"
+              >
+                Pricing
+              </Link>
+              <Link
+                href="/contact"
+                className="text-gray-300 hover:text-white transition-colors"
+              >
+                Contact
+              </Link>
+            </div>
+
+            {/* Auth Buttons */}
+            <div className="flex items-center space-x-4">
+              <Link
+                href="/login"
+                className="bg-white text-black hover:bg-gray-200 transition-colors px-4 py-2 rounded-full font-medium"
+              >
+                Login →
+              </Link>
+
+              {/* Mobile menu button */}
+              <button className="md:hidden flex items-center">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-6 w-6"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M4 6h16M4 12h16m-7 6h7"
+                  />
+                </svg>
+              </button>
             </div>
           </div>
-        )}
+        </motion.div>
+      </motion.div>
 
-        {analysis && parsedMuscles.length > 0 && (
-          <div className="mt-8 w-full max-w-4xl">
-            <h2 className="text-2xl font-semibold mb-4 text-blue-800">
-              Muscle Analysis Results
-            </h2>
+      {/* Back to top button */}
+      <motion.button
+        className="fixed bottom-8 right-8 w-12 h-12 rounded-full bg-gray-900/80 backdrop-blur-md border border-gray-800 shadow-lg z-50 flex items-center justify-center text-white hover:bg-gray-800 transition-all duration-300"
+        onClick={scrollToTop}
+        initial={{ opacity: 0, y: 20 }}
+        animate={{
+          opacity: showScrollTop ? 1 : 0,
+          y: showScrollTop ? 0 : 20,
+          pointerEvents: showScrollTop ? "auto" : "none",
+        }}
+        transition={{ duration: 0.2 }}
+        whileHover={{ scale: 1.1 }}
+        whileTap={{ scale: 0.95 }}
+        aria-label="Scroll to top"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          className="h-6 w-6"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M5 15l7-7 7 7"
+          />
+        </svg>
+      </motion.button>
 
-            {/* Visibility note */}
-            <div className="mb-6 p-4 bg-blue-50 rounded-lg border-l-4 border-l-blue-500 shadow-sm">
-              <div className="flex items-start">
-                <div className="flex-shrink-0 mt-0.5">
+      {/* Hero Section - Add top padding to account for the navbar */}
+      <section className="relative min-h-screen flex flex-col items-center justify-center px-4 md:px-8 py-28 pt-32 bg-gradient-to-b from-black via-gray-950 to-gray-900">
+        <div className="absolute inset-0 overflow-hidden">
+          <div className="absolute top-40 left-1/4 w-72 h-72 bg-blue-500 rounded-full filter blur-[100px] opacity-20"></div>
+          <div className="absolute bottom-40 right-1/4 w-80 h-80 bg-purple-500 rounded-full filter blur-[100px] opacity-20"></div>
+          <div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-gray-900 to-transparent backdrop-filter backdrop-blur-md"></div>
+        </div>
+
+        <motion.div
+          className="container mx-auto max-w-5xl z-10 text-center"
+          initial="hidden"
+          animate="visible"
+          variants={staggerContainer}
+        >
+          <motion.h1
+            className="text-5xl md:text-7xl font-bold mb-6 mt-16"
+            variants={fadeIn}
+          >
+            <div className="mb-2">
+              Fix Your <span className="text-blue-500">Weaknesses</span>
+            </div>
+            <div className="mb-2">
+              Know <span className="text-blue-500">Strengths</span>
+            </div>
+            <div>
+              Train <span className="text-blue-500">Smarter</span>
+            </div>
+          </motion.h1>
+
+          <motion.p
+            className="text-xl md:text-2xl text-gray-300 max-w-3xl mx-auto mb-10"
+            variants={fadeIn}
+          >
+            Upload a photo, get instant muscle analysis, with exercise
+            recommendations on weak muscles and improve faster.
+          </motion.p>
+
+          <motion.div
+            className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16"
+            variants={fadeIn}
+          >
+            <motion.button
+              variants={buttonHover}
+              initial="rest"
+              whileHover="hover"
+              onClick={() => router.push("/main")}
+              className="px-8 py-4 text-lg font-semibold rounded-md bg-blue-600 hover:bg-blue-700 transition-colors shadow-lg"
+            >
+              GET STARTED
+            </motion.button>
+
+            <motion.button
+              variants={buttonHover}
+              initial="rest"
+              whileHover="hover"
+              className="px-8 py-4 text-lg font-semibold rounded-md border border-gray-700 hover:bg-gray-800 transition-colors"
+            >
+              EXPLORE DEMO
+            </motion.button>
+          </motion.div>
+
+          {/* App Preview Image */}
+          <motion.div
+            className="relative w-full h-[500px] rounded-xl overflow-hidden shadow-2xl border border-gray-800"
+            variants={fadeIn}
+          >
+            <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/30 z-10 rounded-xl"></div>
+            <Image
+              src="/app-preview.jpg"
+              alt="Muscle AI App Preview"
+              fill
+              className="object-cover"
+              onError={(e) => {
+                // Prevent infinite loop by setting a flag in the element's dataset
+                if (!e.currentTarget.dataset.errorHandled) {
+                  e.currentTarget.dataset.errorHandled = "true";
+                  // Use a static fallback image instead of reloading the same URL
+                  e.currentTarget.src =
+                    "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTIwMCIgaGVpZ2h0PSI2MDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjEyMDAiIGhlaWdodD0iNjAwIiBmaWxsPSIjMTIxODI2Ii8+PHRleHQgeD0iNjAwIiB5PSIzMDAiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIzNiIgZmlsbD0iIzY2NiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgYWxpZ25tZW50LWJhc2VsaW5lPSJtaWRkbGUiPk11c2NsZSBBSSBBcHAgUHJldmlldzwvdGV4dD48L3N2Zz4=";
+                }
+              }}
+            />
+          </motion.div>
+        </motion.div>
+      </section>
+
+      {/* Features Section */}
+      <section className="py-32 bg-gradient-to-b from-gray-900 via-blue-950/10 to-indigo-950/10 relative">
+        <div className="absolute top-0 left-0 right-0 h-24 bg-gradient-to-b from-gray-900 to-transparent backdrop-filter z-10"></div>
+        <div className="container mx-auto px-4 md:px-8">
+          <motion.div
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, amount: 0.2 }}
+            variants={staggerContainer}
+            className="text-center mb-16"
+          >
+            <motion.h2
+              className="text-4xl md:text-5xl font-bold mb-4"
+              variants={fadeIn}
+            >
+              <span className="text-blue-500">&lt;Muscle /&gt;</span> batteries
+              included
+            </motion.h2>
+            <motion.p
+              className="text-xl text-gray-300 max-w-2xl mx-auto"
+              variants={fadeIn}
+            >
+              Start with a component, scale with a platform. Everything you need
+              to build a world-class muscle analysis system.
+            </motion.p>
+          </motion.div>
+
+          <motion.div
+            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8"
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, amount: 0.1 }}
+            variants={staggerContainer}
+          >
+            {[
+              {
+                title: "Personalized Plans",
+                description:
+                  "Allow users to get customized workouts based on their muscle analysis",
+                icon: (
                   <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-6 w-6 text-blue-500"
+                    className="w-10 h-10 text-blue-500 mb-4"
                     fill="none"
-                    viewBox="0 0 24 24"
                     stroke="currentColor"
+                    viewBox="0 0 24 24"
+                    xmlns="http://www.w3.org/2000/svg"
                   >
                     <path
                       strokeLinecap="round"
                       strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                      strokeWidth={1.5}
+                      d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"
                     />
                   </svg>
+                ),
+                gradient: "from-blue-600 to-indigo-700",
+              },
+              {
+                title: "Real-time Analysis",
+                description:
+                  "Enable instant muscle assessment with advanced AI technology",
+                icon: (
+                  <svg
+                    className="w-10 h-10 text-purple-500 mb-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={1.5}
+                      d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+                    />
+                  </svg>
+                ),
+                gradient: "from-purple-600 to-pink-700",
+              },
+              {
+                title: "Progress Tracking",
+                description:
+                  "Visual dashboard to track muscle development over time",
+                icon: (
+                  <svg
+                    className="w-10 h-10 text-emerald-500 mb-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={1.5}
+                      d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+                    />
+                  </svg>
+                ),
+                gradient: "from-emerald-600 to-teal-700",
+              },
+              {
+                title: "Exercise Recommendations",
+                description:
+                  "Get tailored exercises for each muscle group that needs improvement",
+                icon: (
+                  <svg
+                    className="w-10 h-10 text-amber-500 mb-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={1.5}
+                      d="M13 10V3L4 14h7v7l9-11h-7z"
+                    />
+                  </svg>
+                ),
+                gradient: "from-amber-600 to-orange-700",
+              },
+            ].map((feature, index) => (
+              <motion.div
+                key={index}
+                className="group relative backdrop-blur-sm border border-gray-800 rounded-xl p-8 overflow-hidden"
+                variants={fadeIn}
+                whileHover={{ y: -8, transition: { duration: 0.3 } }}
+              >
+                {/* Gradient background that reveals on hover */}
+                <div
+                  className={`absolute inset-0 bg-gradient-to-br ${feature.gradient} opacity-0 group-hover:opacity-10 transition-opacity duration-300`}
+                ></div>
+
+                {/* Glowing dot in corner */}
+                <div
+                  className={`absolute top-4 right-4 w-2 h-2 rounded-full bg-${
+                    feature.gradient.split(" ")[1].split("-")[0]
+                  }-500`}
+                >
+                  <div
+                    className={`absolute inset-0 bg-${
+                      feature.gradient.split(" ")[1].split("-")[0]
+                    }-500 rounded-full animate-ping opacity-75`}
+                    style={{ animationDuration: "3s" }}
+                  ></div>
                 </div>
-                <div className="ml-3">
-                  <h3 className="text-lg font-medium text-blue-800">
-                    About This Analysis
+
+                {/* Content */}
+                <div className="relative z-10">
+                  {feature.icon}
+                  <h3 className="text-xl font-bold mb-3 group-hover:text-white transition-colors duration-300">
+                    {feature.title}
                   </h3>
-                  <p className="text-gray-800 mt-1">
-                    This analysis is based on{" "}
-                    <strong>muscles visible in the provided image only</strong>.
-                    Some muscle groups may not be rated if they are not clearly
-                    visible from this angle. For a complete assessment, consider
-                    uploading images from different angles (front, back, side).
+                  <p className="text-gray-400 group-hover:text-gray-300 transition-colors duration-300">
+                    {feature.description}
                   </p>
                 </div>
-              </div>
-            </div>
 
-            {/* Muscle Summary Dashboard */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-              {/* Weakest Muscles */}
-              <div className="bg-white p-4 rounded-lg shadow-lg border-l-4 border-l-red-500">
-                <h3 className="font-semibold text-lg mb-2 text-red-800">
-                  Needs Improvement
-                </h3>
-                {parsedMuscles.length > 0 &&
-                  getSortedMuscles(parsedMuscles)
-                    .filter((muscle) => muscle.rating < 7)
-                    .slice(0, 3)
-                    .map((muscle, i) => (
-                      <div
-                        key={i}
-                        className="flex items-center justify-between mb-2 p-2 bg-red-50 rounded"
-                      >
-                        <span className="font-medium text-gray-800">
-                          {muscle.name}
-                        </span>
-                        <span className="text-red-800 font-bold">
-                          {muscle.rating}/10
-                        </span>
-                      </div>
-                    ))}
-                {parsedMuscles.filter((muscle) => muscle.rating < 7).length ===
-                  0 && (
-                  <p className="text-gray-800 italic">
-                    No muscles need improvement
-                  </p>
-                )}
-              </div>
+                {/* Bottom accent line that animates on hover */}
+                <motion.div
+                  className={`absolute bottom-0 left-0 h-1 bg-gradient-to-r ${feature.gradient}`}
+                  initial={{ width: "30%" }}
+                  whileHover={{ width: "100%" }}
+                  transition={{ duration: 0.3 }}
+                ></motion.div>
+              </motion.div>
+            ))}
+          </motion.div>
+        </div>
+      </section>
 
-              {/* Overall Status */}
-              <div className="bg-white p-4 rounded-lg shadow-lg border-l-4 border-l-blue-500">
-                <h3 className="font-semibold text-lg mb-2 text-blue-700">
-                  Overall Status
-                </h3>
-                <div className="flex flex-col items-center justify-center h-full">
-                  <div className="text-5xl font-bold text-blue-700 mt-4">
-                    {parsedMuscles.length > 0
-                      ? calculateAverageRating(parsedMuscles)
-                      : "N/A"}
-                    /10
-                  </div>
-                  <p className="text-center text-gray-800">
-                    Average muscle development
-                  </p>
-                  <p className="text-center mt-2 text-gray-800">
-                    <span className="font-medium">
-                      {parsedMuscles.length > 0
-                        ? `${
-                            parsedMuscles.filter((m) => m.rating < 7).length
-                          } of ${parsedMuscles.length} muscles need focus`
-                        : "No data"}
-                    </span>
-                  </p>
-                </div>
-              </div>
+      {/* Part of your Stack Section */}
+      <section className="py-36 relative overflow-hidden bg-gradient-to-b from-indigo-950/10 via-blue-950/5 to-gray-950">
+        <div className="absolute top-0 left-0 right-0 h-36 bg-gradient-to-b from-indigo-950/10 to-transparent backdrop-filter backdrop-blur-sm z-10"></div>
+        <div className="absolute inset-0 overflow-hidden">
+          <div className="absolute top-40 right-1/4 w-96 h-96 bg-blue-500 rounded-full filter blur-[120px] opacity-10"></div>
+          <div className="absolute bottom-20 left-1/3 w-80 h-80 bg-purple-500 rounded-full filter blur-[100px] opacity-10"></div>
+          <div className="absolute inset-0 bg-gradient-radial from-indigo-900/5 via-transparent to-transparent"></div>
+        </div>
 
-              {/* Strongest Muscles */}
-              <div className="bg-white p-4 rounded-lg shadow-lg border-l-4 border-l-green-500">
-                <h3 className="font-semibold text-lg mb-2 text-green-800">
-                  Well Developed
-                </h3>
-                {parsedMuscles.length > 0 &&
-                  getSortedMuscles(parsedMuscles)
-                    .filter((muscle) => muscle.rating >= 7)
-                    .slice(-3)
-                    .reverse()
-                    .map((muscle, i) => (
-                      <div
-                        key={i}
-                        className="flex items-center justify-between mb-2 p-2 bg-green-50 rounded"
-                      >
-                        <span className="font-medium text-gray-800">
-                          {muscle.name}
-                        </span>
-                        <span className="text-green-800 font-bold">
-                          {muscle.rating}/10
-                        </span>
-                      </div>
-                    ))}
-                {parsedMuscles.filter((muscle) => muscle.rating >= 7).length ===
-                  0 && (
-                  <p className="text-gray-800 italic">
-                    No well developed muscles
-                  </p>
-                )}
-              </div>
-            </div>
+        <div className="container mx-auto px-4 md:px-8 relative z-10">
+          <div className="flex flex-col lg:flex-row justify-between items-center">
+            <motion.div
+              className="lg:w-1/2 mb-12 lg:mb-0 pr-0 lg:pr-12"
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true, amount: 0.2 }}
+              variants={staggerContainer}
+            >
+              <motion.h2
+                className="text-4xl md:text-5xl font-bold mb-6"
+                variants={fadeIn}
+              >
+                Part of your Stack
+              </motion.h2>
 
-            {/* Charts Section */}
-            <div className="mb-8 grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Chart Selection Tabs */}
-              <div className="bg-white p-6 rounded-lg shadow-lg">
-                <h3 className="text-xl font-medium mb-4 text-gray-800">
-                  Muscle Development Visualization
-                </h3>
-                <div className="tabs flex mb-4">
-                  <button
-                    onClick={() => setActiveChart("radar")}
-                    className={`px-4 py-2 ${
-                      activeChart === "radar"
-                        ? "bg-blue-600 text-white"
-                        : "bg-gray-200 hover:bg-gray-300"
-                    } rounded-l-lg transition-colors`}
-                  >
-                    Radar Chart
-                  </button>
-                  <button
-                    onClick={() => setActiveChart("bar")}
-                    className={`px-4 py-2 ${
-                      activeChart === "bar"
-                        ? "bg-blue-600 text-white"
-                        : "bg-gray-200 hover:bg-gray-300"
-                    } rounded-r-lg transition-colors`}
-                  >
-                    Bar Chart
-                  </button>
+              <motion.p
+                className="text-xl text-gray-300 mb-8"
+                variants={fadeIn}
+              >
+                Integrate with the tools you love. From fitness trackers to
+                nutrition apps, Strava, Apple Health, Fitbit, MyFitnessPal, and
+                more.
+              </motion.p>
+
+              <motion.button
+                variants={buttonHover}
+                initial="rest"
+                whileHover="hover"
+                className="px-8 py-4 text-lg font-semibold rounded-md bg-blue-600 hover:bg-blue-700 transition-colors shadow-lg"
+              >
+                GET STARTED
+              </motion.button>
+            </motion.div>
+
+            <motion.div
+              className="lg:w-1/2 relative"
+              initial={{ opacity: 0 }}
+              whileInView={{
+                opacity: 1,
+                transition: { duration: 0.8, delay: 0.3 },
+              }}
+              viewport={{ once: true }}
+            >
+              <div className="relative w-64 h-64 mx-auto">
+                {/* Central logo */}
+                <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-32 h-32 bg-gray-900 rounded-full flex items-center justify-center z-20 shadow-xl overflow-hidden">
+                  <span className="text-white font-bold text-lg">MuscleAI</span>
+
+                  {/* Adding the animated gradient glow effect */}
+                  <motion.div
+                    className="absolute inset-0"
+                    style={{
+                      background: "linear-gradient(to right, #4f46e5, #ff8a00)",
+                      opacity: 0.2,
+                    }}
+                    animate={{
+                      background: [
+                        "linear-gradient(to right, #4f46e5, #ff8a00)",
+                        "linear-gradient(to right, #ff8a00, #4f46e5)",
+                        "linear-gradient(to right, #4f46e5, #ff8a00)",
+                      ],
+                    }}
+                    transition={{
+                      duration: 5,
+                      repeat: Infinity,
+                      ease: "linear",
+                    }}
+                  />
                 </div>
 
-                {activeChart === "radar" && (
-                  <MuscleRadarChart data={parsedMuscles} />
-                )}
-                {activeChart === "bar" && (
-                  <MuscleBarChart data={parsedMuscles} />
-                )}
-              </div>
-
-              {/* Muscle Distribution Pie Chart */}
-              <div className="bg-white p-6 rounded-lg shadow-lg">
-                <h3 className="text-xl font-medium mb-4 text-gray-800">
-                  Muscle Strength Distribution
-                </h3>
-                <div className="mt-4 grid grid-cols-2 gap-4 text-center">
-                  <div className="p-2 bg-red-50 rounded border border-red-200">
-                    <div className="font-medium text-gray-800">
-                      Needs Improvement (1-6)
-                    </div>
-                    <div className="text-xl font-bold text-red-800">
-                      {parsedMuscles.filter((m) => m.rating < 7).length}
-                    </div>
-                  </div>
-                  <div className="p-2 bg-green-50 rounded border border-green-200">
-                    <div className="font-medium text-gray-800">
-                      Well Developed (7-10)
-                    </div>
-                    <div className="text-xl font-bold text-green-800">
-                      {parsedMuscles.filter((m) => m.rating >= 7).length}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Muscle Ranking Chart */}
-            <div className="mb-8 p-6 bg-white rounded-lg shadow-lg">
-              <h3 className="text-xl font-medium mb-4 text-gray-800">
-                Muscle Development Ranking
-              </h3>
-              <div className="space-y-3">
-                {parsedMuscles.length > 0 &&
-                  getSortedMuscles(parsedMuscles).map((muscle, index) => (
-                    <div key={index} className="flex items-center">
-                      <div className="w-1/4 md:w-1/5 pr-4">
-                        <span
-                          className={`text-sm font-medium ${
-                            muscle.rating < 7
-                              ? "text-red-800"
-                              : "text-green-800"
-                          }`}
-                        >
-                          {muscle.name}
-                        </span>
-                      </div>
-                      <div className="flex-1">
-                        <div className="w-full bg-gray-200 rounded-full h-5 flex items-center overflow-hidden">
-                          <div
-                            className={`${getRatingColor(
-                              muscle.rating
-                            )} h-5 rounded-full flex items-center justify-center text-xs text-white font-bold px-2 transition-all duration-500`}
-                            style={{
-                              width: `${Math.max(muscle.rating * 10, 15)}%`,
-                            }}
-                          >
-                            {muscle.rating}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                {parsedMuscles.length === 0 && (
-                  <p className="text-gray-800 italic">
-                    No muscle data available
-                  </p>
-                )}
-              </div>
-            </div>
-
-            {/* Visual Chart for Muscle Development */}
-            <div className="mb-8 p-6 bg-white rounded-lg shadow-lg">
-              <h3 className="text-xl font-medium mb-4 text-gray-800">
-                Detailed Muscle Ratings
-              </h3>
-              <div className="space-y-4">
-                {parsedMuscles.map((muscle, index) => (
-                  <div key={index} className="flex flex-col">
-                    <div className="flex justify-between mb-1">
-                      <span className="text-base font-medium text-gray-800">
-                        {muscle.name}
-                      </span>
-                      <span className="text-sm font-medium text-gray-800">
-                        {muscle.rating}/10
-                      </span>
-                    </div>
-                    <div className="w-full bg-gray-200 rounded-full h-4">
-                      <div
-                        className={`${getRatingColor(
-                          muscle.rating
-                        )} h-4 rounded-full transition-all duration-500`}
-                        style={{ width: `${muscle.rating * 10}%` }}
-                      ></div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Priority Training Plan */}
-            {parsedMuscles.filter((muscle) => muscle.rating < 7).length > 0 && (
-              <div className="mb-8 p-6 bg-white rounded-lg shadow-lg border border-red-200">
-                <h3 className="text-xl font-medium mb-4 text-red-800">
-                  Priority Training Plan
-                </h3>
-                <p className="mb-4 text-gray-800">
-                  These muscles need the most attention in your training
-                  routine:
-                </p>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {parsedMuscles
-                    .filter((muscle) => muscle.rating < 7)
-                    .map((muscle, index) => (
-                      <div
-                        key={index}
-                        className={`border rounded-lg p-4 ${getBadgeClass(
-                          muscle.rating
-                        )} shadow-sm`}
-                      >
-                        <div className="flex justify-between items-center mb-2">
-                          <h4 className="font-semibold text-lg text-gray-800">
-                            {muscle.name}
-                          </h4>
-                          <span
-                            className={`px-2 py-1 rounded-full text-white text-xs font-bold ${getRatingColor(
-                              muscle.rating
-                            )}`}
-                          >
-                            {muscle.rating}/10
-                          </span>
-                        </div>
-                        <div className="space-y-2">
-                          {muscle.exercises.length > 0 ? (
-                            <ul className="list-disc list-inside text-gray-800">
-                              {muscle.exercises.map((exercise, i) => (
-                                <li key={i} className="py-1">
-                                  {exercise}
-                                </li>
-                              ))}
-                            </ul>
-                          ) : (
-                            <p className="text-gray-800 italic">
-                              No specific exercises recommended
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                </div>
-              </div>
-            )}
-
-            {/* Exercise Recommendations */}
-            <ExerciseSection muscles={parsedMuscles} />
-
-            {/* Original Analysis Text */}
-            <div className="mt-6 p-6 bg-white rounded-lg shadow border border-gray-200">
-              <details>
-                <summary className="text-blue-700 font-medium cursor-pointer">
-                  View Full Analysis Text
-                </summary>
-                <div className="mt-4 whitespace-pre-line text-gray-800 bg-gray-50 p-4 rounded">
-                  {analysis}
-                </div>
-              </details>
-            </div>
-
-            {/* Human Body Muscle Visualization */}
-            <div className="mb-8 p-6 bg-white rounded-lg shadow-lg">
-              <h3 className="text-xl font-medium mb-4 text-gray-800">
-                Visual Muscle Map
-              </h3>
-              <p className="mb-4 text-gray-800">
-                This interactive visualization shows your muscle development
-                based on the analysis. Hover over any muscle to see its details:
-              </p>
-              <div className="mb-4 flex flex-wrap gap-4 justify-center">
-                <div className="flex items-center">
-                  <div className="w-4 h-4 bg-red-500 rounded mr-2"></div>
-                  <span className="text-gray-800">Needs Work (1-3)</span>
-                </div>
-                <div className="flex items-center">
-                  <div className="w-4 h-4 bg-yellow-500 rounded mr-2"></div>
-                  <span className="text-gray-800">Moderate (4-6)</span>
-                </div>
-                <div className="flex items-center">
-                  <div className="w-4 h-4 bg-green-500 rounded mr-2"></div>
-                  <span className="text-gray-800">Strong (7-10)</span>
-                </div>
-                <div className="flex items-center">
-                  <div className="w-4 h-4 bg-gray-300 rounded mr-2"></div>
-                  <span className="text-gray-800">No Data</span>
-                </div>
-              </div>
-              <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 h-[600px]">
-                <MuscleVisualizer
-                  data={parsedMuscles}
-                  nonVisibleMuscles={nonVisibleMuscles}
+                {/* Adding outer glow effect */}
+                <motion.div
+                  className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-32 h-32 rounded-full"
+                  animate={{
+                    boxShadow: [
+                      "0 0 15px 2px rgba(79, 70, 229, 0.5), 0 0 30px 5px rgba(79, 70, 229, 0.3)",
+                      "0 0 20px 3px rgba(255, 138, 0, 0.5), 0 0 40px 7px rgba(255, 138, 0, 0.3)",
+                      "0 0 15px 2px rgba(79, 70, 229, 0.5), 0 0 30px 5px rgba(79, 70, 229, 0.3)",
+                    ],
+                  }}
+                  transition={{
+                    duration: 5,
+                    repeat: Infinity,
+                    ease: "easeInOut",
+                  }}
                 />
-              </div>
-              <p className="mt-4 text-sm text-gray-700 text-center italic">
-                Click or hover over muscles to see ratings and recommended
-                exercises
-              </p>
-            </div>
 
-            {/* Muscles Not Visible in This Image */}
-            {nonVisibleMuscles.length > 0 && (
-              <div className="mb-8 p-6 bg-yellow-50 rounded-lg shadow-lg border-l-4 border-l-yellow-500">
-                <div className="flex items-start">
-                  <div className="flex-shrink-0 mt-0.5">
+                {/* Background subtle glow */}
+                <motion.div
+                  className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-44 h-44 bg-blue-500 rounded-full filter blur-xl opacity-10"
+                  animate={{
+                    opacity: [0.05, 0.1, 0.05],
+                    scale: [0.95, 1.05, 0.95],
+                  }}
+                  transition={{
+                    duration: 4,
+                    repeat: Infinity,
+                    ease: "easeInOut",
+                  }}
+                />
+
+                {/* Floating icons */}
+                <motion.div
+                  className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-6 w-12 h-12 bg-gray-800 rounded-full flex items-center justify-center shadow-lg"
+                  animate={{
+                    y: [-6, -8, -6],
+                    boxShadow: [
+                      "0 0 5px 1px rgba(245, 158, 11, 0.1)",
+                      "0 0 8px 3px rgba(245, 158, 11, 0.2)",
+                      "0 0 5px 1px rgba(245, 158, 11, 0.1)",
+                    ],
+                  }}
+                  transition={{
+                    duration: 3,
+                    repeat: Infinity,
+                    ease: "easeInOut",
+                  }}
+                >
+                  <span className="text-xl">💪</span>
+                </motion.div>
+
+                <motion.div
+                  className="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-6 w-12 h-12 bg-gray-800 rounded-full flex items-center justify-center shadow-lg"
+                  animate={{
+                    y: [6, 8, 6],
+                    boxShadow: [
+                      "0 0 5px 1px rgba(59, 130, 246, 0.1)",
+                      "0 0 8px 3px rgba(59, 130, 246, 0.2)",
+                      "0 0 5px 1px rgba(59, 130, 246, 0.1)",
+                    ],
+                  }}
+                  transition={{
+                    duration: 3.5,
+                    repeat: Infinity,
+                    ease: "easeInOut",
+                  }}
+                >
+                  <span className="text-xl">📊</span>
+                </motion.div>
+
+                <motion.div
+                  className="absolute left-0 top-1/2 transform -translate-x-6 -translate-y-1/2 w-12 h-12 bg-gray-800 rounded-full flex items-center justify-center shadow-lg"
+                  animate={{
+                    x: [-6, -8, -6],
+                    boxShadow: [
+                      "0 0 5px 1px rgba(52, 211, 153, 0.1)",
+                      "0 0 8px 3px rgba(52, 211, 153, 0.2)",
+                      "0 0 5px 1px rgba(52, 211, 153, 0.1)",
+                    ],
+                  }}
+                  transition={{
+                    duration: 2.8,
+                    repeat: Infinity,
+                    ease: "easeInOut",
+                  }}
+                >
+                  <span className="text-xl">🥗</span>
+                </motion.div>
+
+                <motion.div
+                  className="absolute right-0 top-1/2 transform translate-x-6 -translate-y-1/2 w-12 h-12 bg-gray-800 rounded-full flex items-center justify-center shadow-lg"
+                  animate={{
+                    x: [6, 8, 6],
+                    boxShadow: [
+                      "0 0 5px 1px rgba(239, 68, 68, 0.1)",
+                      "0 0 8px 3px rgba(239, 68, 68, 0.2)",
+                      "0 0 5px 1px rgba(239, 68, 68, 0.1)",
+                    ],
+                  }}
+                  transition={{
+                    duration: 3.2,
+                    repeat: Infinity,
+                    ease: "easeInOut",
+                  }}
+                >
+                  <span className="text-xl">⏱️</span>
+                </motion.div>
+
+                <motion.div
+                  className="absolute top-1/4 right-1/4 transform translate-x-5 -translate-y-5 w-12 h-12 bg-gray-800 rounded-full flex items-center justify-center shadow-lg"
+                  animate={{
+                    x: [5, 7, 5],
+                    y: [-5, -7, -5],
+                    boxShadow: [
+                      "0 0 5px 1px rgba(139, 92, 246, 0.1)",
+                      "0 0 8px 3px rgba(139, 92, 246, 0.2)",
+                      "0 0 5px 1px rgba(139, 92, 246, 0.1)",
+                    ],
+                  }}
+                  transition={{
+                    duration: 4,
+                    repeat: Infinity,
+                    ease: "easeInOut",
+                  }}
+                >
+                  <span className="text-lg">🏃</span>
+                </motion.div>
+
+                <motion.div
+                  className="absolute bottom-1/4 left-1/4 transform -translate-x-5 translate-y-5 w-12 h-12 bg-gray-800 rounded-full flex items-center justify-center shadow-lg"
+                  animate={{
+                    x: [-5, -7, -5],
+                    y: [5, 7, 5],
+                    boxShadow: [
+                      "0 0 5px 1px rgba(251, 191, 36, 0.1)",
+                      "0 0 8px 3px rgba(251, 191, 36, 0.2)",
+                      "0 0 5px 1px rgba(251, 191, 36, 0.1)",
+                    ],
+                  }}
+                  transition={{
+                    duration: 3.7,
+                    repeat: Infinity,
+                    ease: "easeInOut",
+                  }}
+                >
+                  <span className="text-lg">⚡</span>
+                </motion.div>
+              </div>
+            </motion.div>
+          </div>
+        </div>
+      </section>
+
+      {/* Code Showcase Section */}
+      <section className="py-24 bg-gradient-to-b from-gray-950 via-blue-950/5 to-gray-950 relative overflow-hidden">
+        <div className="absolute top-0 left-0 right-0 h-16 bg-gradient-to-b from-gray-950 to-transparent backdrop-filter backdrop-blur-md z-10"></div>
+        <div className="absolute inset-0 overflow-hidden">
+          <div className="absolute top-10 left-1/3 w-96 h-96 bg-blue-600 rounded-full filter blur-[150px] opacity-5"></div>
+          <div className="absolute bottom-10 right-1/3 w-96 h-96 bg-purple-600 rounded-full filter blur-[150px] opacity-5"></div>
+          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-full h-full bg-gradient-radial from-blue-900/10 to-transparent opacity-30"></div>
+        </div>
+
+        <div className="container mx-auto px-4 md:px-16 relative z-10">
+          <div className="flex flex-col lg:flex-row items-center gap-20">
+            {/* Code Display */}
+            <motion.div
+              className="lg:w-3/5 relative"
+              initial={{ opacity: 0, x: -20 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.8 }}
+              viewport={{ once: true }}
+            >
+              <div className="relative rounded-xl overflow-hidden shadow-2xl border border-gray-800">
+                {/* Code Editor Header */}
+                <div className="bg-gray-900/80 backdrop-blur-sm px-4 py-3 flex items-center border-b border-gray-800">
+                  <div className="flex space-x-2">
+                    <div className="w-3 h-3 rounded-full bg-red-500"></div>
+                    <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
+                    <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                  </div>
+                </div>
+
+                {/* Ambient glow effect */}
+                <motion.div
+                  className="absolute -inset-1 bg-gradient-to-r from-blue-500/20 via-purple-500/20 to-blue-500/20 rounded-xl blur-xl"
+                  animate={{
+                    background: [
+                      "linear-gradient(to right, rgba(59, 130, 246, 0.1), rgba(139, 92, 246, 0.1), rgba(59, 130, 246, 0.1))",
+                      "linear-gradient(to right, rgba(139, 92, 246, 0.1), rgba(59, 130, 246, 0.1), rgba(139, 92, 246, 0.1))",
+                      "linear-gradient(to right, rgba(59, 130, 246, 0.1), rgba(139, 92, 246, 0.1), rgba(59, 130, 246, 0.1))",
+                    ],
+                  }}
+                  transition={{
+                    duration: 8,
+                    repeat: Infinity,
+                    ease: "linear",
+                  }}
+                  style={{ opacity: 0.6, zIndex: -1 }}
+                />
+
+                {/* Code Content */}
+                <div className="bg-gray-900/70 backdrop-blur-sm p-6 font-mono text-sm text-gray-300 overflow-x-auto">
+                  <div className="grid grid-cols-[auto,1fr] gap-x-6">
+                    {/* Line Numbers */}
+                    <div className="text-gray-500 select-none pr-2 text-right">
+                      {Array.from({ length: 15 }, (_, i) => (
+                        <div key={i} className="leading-relaxed">
+                          {i + 1}
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Code with Syntax Highlighting */}
+                    <div className="leading-relaxed">
+                      <div>
+                        <span className="text-purple-400">import</span>{" "}
+                        <span className="text-cyan-300">{"{ workflow }"}</span>{" "}
+                        <span className="text-purple-400">from</span>{" "}
+                        <span className="text-green-400">
+                          '@novu/framework'
+                        </span>
+                        ;
+                      </div>
+                      <div>
+                        <span className="text-purple-400">import</span>{" "}
+                        <span className="text-cyan-300">{"{ z }"}</span>{" "}
+                        <span className="text-purple-400">from</span>{" "}
+                        <span className="text-green-400">'zod'</span>;
+                      </div>
+                      <div>
+                        <span className="text-purple-400">import</span>{" "}
+                        <span className="text-cyan-300">{"{ render }"}</span>{" "}
+                        <span className="text-purple-400">from</span>{" "}
+                        <span className="text-green-400">
+                          '@react-email/components'
+                        </span>
+                        ;
+                      </div>
+                      <div></div>
+                      <div>
+                        <span className="text-cyan-300">workflow</span>(
+                        <span className="text-green-400">
+                          'weekly-comments'
+                        </span>
+                        , <span className="text-purple-400">async</span> (
+                        <span className="text-cyan-300">{"{ step }"}</span>)
+                        =&gt; {"{"}
+                      </div>
+                      <div>
+                        &nbsp;&nbsp;
+                        <span className="text-purple-400">const</span> digest ={" "}
+                        <span className="text-purple-400">await</span> step.
+                        <span className="text-cyan-300">digest</span>(
+                        <span className="text-green-400">'collect-events'</span>
+                        , () =&gt; ({"{"}))
+                      </div>
+                      <div>
+                        &nbsp;&nbsp;&nbsp;&nbsp;cron:{" "}
+                        <span className="text-green-400">'weekly'</span>
+                      </div>
+                      <div>&nbsp;&nbsp;{"})"};</div>
+                      <div></div>
+                      <div>
+                        &nbsp;&nbsp;
+                        <span className="text-purple-400">await</span> step.
+                        <span className="text-cyan-300">email</span>(
+                        <span className="text-green-400">'email'</span>,{" "}
+                        <span className="text-purple-400">async</span> () =&gt;{" "}
+                        {"{"}
+                      </div>
+                      <div>
+                        &nbsp;&nbsp;&nbsp;&nbsp;
+                        <span className="text-purple-400">const</span> {"{"}{" "}
+                        data {"}"} ={" "}
+                        <span className="text-purple-400">await</span> supabase.
+                        <span className="text-cyan-300">from</span>(
+                        <span className="text-green-400">'posts'</span>).
+                        <span className="text-cyan-300">select</span>(
+                        <span className="text-green-400">'*'</span>);
+                      </div>
+                      <div></div>
+                      <div>
+                        &nbsp;&nbsp;&nbsp;&nbsp;
+                        <span className="text-purple-400">return</span> {"{"}
+                      </div>
+                      <div>
+                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;subject:{" "}
+                        <span className="text-green-400">
+                          'React based email'
+                        </span>
+                        ,
+                      </div>
+                      <div>
+                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;body:{" "}
+                        <span className="text-cyan-300">render</span>(
+                        <span className="text-yellow-400">
+                          &lt;WeeklyDigestEmail
+                        </span>{" "}
+                        <span className="text-blue-400">comments</span>=
+                        <span className="text-yellow-400">{"{"}</span>
+                        digest.events
+                        <span className="text-yellow-400">{"}"}</span>{" "}
+                        <span className="text-blue-400">posts</span>=
+                        <span className="text-yellow-400">{"{"}</span>data
+                        <span className="text-yellow-400">{"}"}</span>
+                        <span className="text-yellow-400">/&gt;</span>)
+                      </div>
+                      <div>&nbsp;&nbsp;&nbsp;&nbsp;{"}"}</div>
+                      <div>&nbsp;&nbsp;{"})"};</div>
+                      <div>{"})"}</div>
+                    </div>
+                  </div>
+
+                  {/* Animated Cursor */}
+                  <motion.div
+                    className="absolute bottom-12 right-12 h-5 w-2.5 bg-blue-400"
+                    animate={{ opacity: [1, 0, 1] }}
+                    transition={{ duration: 1, repeat: Infinity }}
+                  />
+                </div>
+              </div>
+
+              {/* Soft glow under the code editor */}
+              <div className="absolute -bottom-6 left-1/2 transform -translate-x-1/2 w-3/4 h-12 bg-blue-600/20 filter blur-xl rounded-full"></div>
+
+              {/* Ambient stars effect */}
+              <ClientOnly>
+                <div className="absolute -inset-10 z-0 pointer-events-none">
+                  {[...Array(12)].map((_, i) => (
+                    <motion.div
+                      key={i}
+                      className="absolute w-1 h-1 bg-blue-400 rounded-full"
+                      style={{
+                        left: `${Math.random() * 100}%`,
+                        top: `${Math.random() * 100}%`,
+                        boxShadow: "0 0 4px 1px rgba(96, 165, 250, 0.3)",
+                      }}
+                      animate={{
+                        opacity: [0.2, 0.5, 0.2],
+                        scale: [1, 1.5, 1],
+                      }}
+                      transition={{
+                        duration: Math.random() * 3 + 2,
+                        repeat: Infinity,
+                        ease: "easeInOut",
+                        delay: Math.random() * 2,
+                      }}
+                    />
+                  ))}
+                </div>
+              </ClientOnly>
+            </motion.div>
+
+            {/* Text Content */}
+            <motion.div
+              className="lg:w-2/5"
+              initial={{ opacity: 0, x: 20 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.8, delay: 0.2 }}
+              viewport={{ once: true }}
+            >
+              <h2 className="text-5xl md:text-6xl font-bold mb-8 leading-tight">
+                Start Simple, Scale to Code
+              </h2>
+
+              <p className="text-xl text-gray-300 mb-12 leading-relaxed">
+                Begin with our intuitive UI, break into code when you need
+                run-time control, react email or local data access. You choose
+                when to level up, the ultimate escape hatch.
+              </p>
+
+              <motion.button
+                variants={buttonHover}
+                initial="rest"
+                whileHover="hover"
+                className="px-10 py-5 text-lg font-semibold rounded-md bg-blue-600 hover:bg-blue-700 transition-colors shadow-lg"
+              >
+                LEARN MORE
+              </motion.button>
+            </motion.div>
+          </div>
+        </div>
+      </section>
+
+      {/* Testimonials Section */}
+      <section className="py-32 relative overflow-hidden bg-gradient-to-b from-gray-950 via-purple-950/5 to-gray-950">
+        <div className="absolute top-0 left-0 right-0 h-24 bg-gradient-to-b from-gray-950 to-transparent backdrop-filter backdrop-blur-md z-10"></div>
+        <div className="container mx-auto px-4 md:px-8">
+          <motion.div
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, amount: 0.2 }}
+            variants={staggerContainer}
+            className="text-center mb-16"
+          >
+            <motion.h2
+              className="text-4xl md:text-5xl font-bold mb-6"
+              variants={fadeIn}
+            >
+              Don't just take our word for it...
+            </motion.h2>
+            <motion.p
+              className="text-xl text-gray-300 max-w-3xl mx-auto"
+              variants={fadeIn}
+            >
+              Explore what developers and fitness enthusiasts say about why
+              they're fans of our AI-powered fitness analysis platform
+            </motion.p>
+          </motion.div>
+
+          <motion.div
+            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, amount: 0.1 }}
+            variants={staggerContainer}
+          >
+            {/* Testimonial 1 */}
+            <motion.div
+              className="bg-gray-900/50 backdrop-blur-sm border border-gray-800 rounded-xl p-8"
+              variants={fadeIn}
+              whileHover={{ y: -5, transition: { duration: 0.2 } }}
+            >
+              <p className="text-lg mb-6">
+                "Just integrated MuscleAI into my fitness app. The AI analysis
+                is incredibly accurate and the API is so easy to work with! 💪"
+              </p>
+              <div className="flex items-center">
+                <div className="w-12 h-12 bg-gray-800 rounded-full flex items-center justify-center mr-4">
+                  <span className="text-xl">👨‍💻</span>
+                </div>
+                <div>
+                  <h4 className="font-semibold">Alex Thompson</h4>
+                  <p className="text-gray-400">@devAlex</p>
+                </div>
+              </div>
+            </motion.div>
+
+            {/* Testimonial 2 */}
+            <motion.div
+              className="bg-gray-900/50 backdrop-blur-sm border border-gray-800 rounded-xl p-8"
+              variants={fadeIn}
+              whileHover={{ y: -5, transition: { duration: 0.2 } }}
+            >
+              <p className="text-lg mb-6">
+                "The real-time muscle analysis has completely transformed how I
+                track my clients' progress. Game-changing technology! 🚀"
+              </p>
+              <div className="flex items-center">
+                <div className="w-12 h-12 bg-gray-800 rounded-full flex items-center justify-center mr-4">
+                  <span className="text-xl">💪</span>
+                </div>
+                <div>
+                  <h4 className="font-semibold">Sarah Chen</h4>
+                  <p className="text-gray-400">Fitness Coach</p>
+                </div>
+              </div>
+            </motion.div>
+
+            {/* Testimonial 3 */}
+            <motion.div
+              className="bg-gray-900/50 backdrop-blur-sm border border-gray-800 rounded-xl p-8"
+              variants={fadeIn}
+              whileHover={{ y: -5, transition: { duration: 0.2 } }}
+            >
+              <p className="text-lg mb-6">
+                "Finally, an AI platform that understands the nuances of muscle
+                development. The insights are incredibly detailed! 📊"
+              </p>
+              <div className="flex items-center">
+                <div className="w-12 h-12 bg-gray-800 rounded-full flex items-center justify-center mr-4">
+                  <span className="text-xl">🏋️‍♂️</span>
+                </div>
+                <div>
+                  <h4 className="font-semibold">Mike Rodriguez</h4>
+                  <p className="text-gray-400">Personal Trainer</p>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* Coding Comparison Section */}
+      <section className="py-32 relative overflow-hidden bg-gradient-to-b from-gray-950 via-purple-950/5 to-gray-950">
+        <div className="absolute top-0 left-0 right-0 h-24 bg-gradient-to-b from-gray-950 to-transparent backdrop-filter backdrop-blur-md z-10"></div>
+        <div className="container mx-auto px-4 md:px-8">
+          <motion.div
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true }}
+            variants={staggerContainer}
+            className="text-center mb-16"
+          >
+            <motion.h2
+              className="text-5xl md:text-6xl font-bold mb-6"
+              variants={fadeIn}
+            >
+              Coding courses are designed for
+            </motion.h2>
+            <motion.h2
+              className="text-5xl md:text-6xl font-bold mb-12 flex items-center justify-center gap-4 flex-wrap"
+              variants={fadeIn}
+            >
+              <span className="text-pink-400 italic">software engineers</span>
+              <span>not</span>
+              <span className="text-emerald-400 italic">entrepreneurs</span>
+            </motion.h2>
+          </motion.div>
+
+          <div className="grid md:grid-cols-2 gap-8 max-w-6xl mx-auto">
+            {/* Software Engineer Approach */}
+            <motion.div
+              className="relative bg-gray-900/30 backdrop-blur-sm border border-pink-500/20 rounded-3xl p-8 overflow-hidden"
+              initial={{ opacity: 0, x: -20 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.6 }}
+              viewport={{ once: true }}
+            >
+              <div className="absolute top-6 right-6">
+                <svg
+                  className="w-8 h-8 text-pink-500"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              </div>
+              <h3 className="text-2xl font-bold mb-6 text-pink-400">
+                Coding as an employee
+              </h3>
+              <ul className="space-y-4 text-lg text-gray-300">
+                <li className="flex items-start gap-3">
+                  • Invert binary trees
+                </li>
+                <li className="flex items-start gap-3">
+                  • Master 47 sorting algorithms you'll never implement
+                </li>
+                <li className="flex items-start gap-3">
+                  • Memorize Big O notation to impress your interviewer
+                </li>
+                <li className="flex items-start gap-3">
+                  • Read documentation longer than The Lord of the Rings
+                </li>
+                <li className="flex items-start gap-3">
+                  • Write complex code when a simple AI prompt would do
+                </li>
+              </ul>
+            </motion.div>
+
+            {/* Entrepreneur Approach */}
+            <motion.div
+              className="relative bg-gray-900/30 backdrop-blur-sm border border-emerald-500/20 rounded-3xl p-8 overflow-hidden"
+              initial={{ opacity: 0, x: 20 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.6, delay: 0.2 }}
+              viewport={{ once: true }}
+            >
+              <div className="absolute top-6 right-6">
+                <svg
+                  className="w-8 h-8 text-emerald-500"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M5 13l4 4L19 7"
+                  />
+                </svg>
+              </div>
+              <h3 className="text-2xl font-bold mb-6 text-emerald-400">
+                Coding as an entrepreneur
+              </h3>
+              <ul className="space-y-4 text-lg text-gray-300">
+                <li className="flex items-start gap-3">
+                  • Learn only the fundamentals
+                </li>
+                <li className="flex items-start gap-3">
+                  • Use AI to code for you
+                </li>
+                <li className="flex items-start gap-3">
+                  • Keep learning on the fly
+                </li>
+                <li className="flex items-start gap-3">
+                  • Focus on shipping products, not perfect code
+                </li>
+                <li className="flex items-start gap-3">
+                  • Spend more time on strategy than implementation
+                </li>
+              </ul>
+            </motion.div>
+          </div>
+        </div>
+      </section>
+
+      {/* Pricing Section */}
+      <section className="py-36 relative overflow-hidden bg-gradient-to-b from-gray-950 to-gray-900">
+        <div className="absolute top-0 left-0 right-0 h-24 bg-gradient-to-b from-gray-950 to-transparent backdrop-filter backdrop-blur-md z-10"></div>
+        <div className="absolute inset-0 overflow-hidden">
+          <div className="absolute top-40 left-1/4 w-96 h-96 bg-blue-500 rounded-full filter blur-[180px] opacity-10"></div>
+          <div className="absolute bottom-40 right-1/4 w-96 h-96 bg-emerald-500 rounded-full filter blur-[180px] opacity-10"></div>
+        </div>
+
+        <div className="container mx-auto px-4 md:px-8 relative z-10">
+          <motion.div
+            className="text-center max-w-3xl mx-auto mb-16"
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, amount: 0.2 }}
+            variants={staggerContainer}
+          >
+            <motion.h2
+              className="text-4xl md:text-5xl font-bold mb-6"
+              variants={fadeIn}
+            >
+              Find the right plan that suits
+            </motion.h2>
+            <motion.h2
+              className="text-4xl md:text-5xl font-bold mb-8"
+              variants={fadeIn}
+            >
+              your needs
+            </motion.h2>
+            <motion.p className="text-xl text-gray-300" variants={fadeIn}>
+              Our wide range of plans ensures that you find the perfect match,
+              giving you the confidence and support you need.
+            </motion.p>
+          </motion.div>
+
+          {/* Pricing Cards */}
+          <motion.div
+            className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto"
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, amount: 0.1 }}
+            variants={staggerContainer}
+          >
+            {/* Starter Plan */}
+            <motion.div
+              className="bg-gray-900/50 backdrop-blur-sm border border-gray-800 rounded-xl overflow-hidden"
+              variants={fadeIn}
+              whileHover={{ y: -5, transition: { duration: 0.2 } }}
+            >
+              <div className="px-8 py-6">
+                <div className="flex items-center mb-2">
+                  <div className="w-8 h-8 bg-gray-800 rounded-full flex items-center justify-center mr-3">
                     <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="h-6 w-6 text-yellow-500"
+                      className="w-4 h-4"
                       fill="none"
-                      viewBox="0 0 24 24"
                       stroke="currentColor"
+                      viewBox="0 0 24 24"
                     >
                       <path
                         strokeLinecap="round"
                         strokeLinejoin="round"
                         strokeWidth={2}
-                        d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                        d="M13 10V3L4 14h7v7l9-11h-7z"
                       />
                     </svg>
                   </div>
-                  <div className="ml-3 flex-1">
-                    <h3 className="text-xl font-semibold text-yellow-800 mb-3">
-                      Muscles Not Visible in This Image
-                    </h3>
-                    <p className="text-gray-800 mb-4">
-                      The following muscles{" "}
-                      <span className="font-semibold">
-                        cannot be properly assessed
-                      </span>{" "}
-                      from this angle and have been excluded from the analysis:
-                    </p>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mb-4">
-                      {nonVisibleMuscles.map((muscle, index) => (
-                        <div
-                          key={index}
-                          className="flex items-center px-3 py-2 bg-yellow-100 rounded-lg border border-yellow-200"
-                        >
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            className="h-5 w-5 text-yellow-600 mr-2"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-                            />
-                          </svg>
-                          <span className="text-gray-800 font-medium">
-                            {muscle}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                    <div className="mt-2 mb-2 border-t border-yellow-200 pt-4">
-                      <div className="flex items-start">
+                  <h3 className="text-xl font-bold">Starter</h3>
+                </div>
+                <p className="text-gray-400 text-sm mb-6">
+                  For small teams billed monthly.
+                </p>
+
+                <div className="mb-6">
+                  <div className="flex items-end">
+                    <span className="text-4xl font-bold">$25</span>
+                    <span className="text-gray-400 ml-2">/ per month</span>
+                  </div>
+                </div>
+
+                <button className="w-full py-3 rounded-md border border-gray-700 hover:bg-gray-800 transition-colors mb-6">
+                  Get Started
+                </button>
+
+                <div>
+                  <h4 className="font-semibold mb-4">Features:</h4>
+                  <ul className="space-y-4">
+                    <li className="flex items-center">
+                      <div className="w-6 h-6 rounded-full flex items-center justify-center mr-3">
                         <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          className="h-5 w-5 text-blue-500 mr-2 mt-0.5"
+                          className="w-4 h-4"
                           fill="none"
-                          viewBox="0 0 24 24"
                           stroke="currentColor"
+                          viewBox="0 0 24 24"
                         >
                           <path
                             strokeLinecap="round"
                             strokeLinejoin="round"
                             strokeWidth={2}
-                            d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                            d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"
                           />
                         </svg>
-                        <p className="text-gray-800">
-                          <span className="font-medium">Recommendation:</span>{" "}
-                          For a complete assessment, consider uploading images
-                          from multiple angles (front, back, and sides).
-                        </p>
                       </div>
-                    </div>
+                      <span className="text-gray-300">Financial Workflows</span>
+                    </li>
+                    <li className="flex items-center">
+                      <div className="w-6 h-6 rounded-full flex items-center justify-center mr-3">
+                        <svg
+                          className="w-4 h-4"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+                          />
+                        </svg>
+                      </div>
+                      <span className="text-gray-300">
+                        Analytics & Reporting
+                      </span>
+                    </li>
+                    <li className="flex items-center">
+                      <div className="w-6 h-6 rounded-full flex items-center justify-center mr-3">
+                        <svg
+                          className="w-4 h-4"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z"
+                          />
+                        </svg>
+                      </div>
+                      <span className="text-gray-300">
+                        24/7 Customer Support
+                      </span>
+                    </li>
+                    <li className="flex items-center">
+                      <div className="w-6 h-6 rounded-full flex items-center justify-center mr-3">
+                        <svg
+                          className="w-4 h-4"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+                          />
+                        </svg>
+                      </div>
+                      <span className="text-gray-300">Secure Transactions</span>
+                    </li>
+                  </ul>
+                  <div className="mt-6 text-gray-400 text-sm">
+                    and 2 more <span className="inline-block ml-1">→</span>
                   </div>
                 </div>
               </div>
-            )}
-          </div>
-        )}
+            </motion.div>
 
-        {/* When analysis exists but parsing failed */}
-        {analysis && parsedMuscles.length === 0 && (
-          <div className="mt-8 w-full max-w-2xl">
-            <h2 className="text-2xl font-semibold mb-4 text-blue-800">
-              Muscle Analysis Results
-            </h2>
-            <div className="p-6 bg-white rounded-lg shadow-lg">
-              <div className="whitespace-pre-line text-gray-800">
-                {analysis}
+            {/* Enterprise Plan */}
+            <motion.div
+              className="bg-gray-900/50 backdrop-blur-sm border border-gray-700 rounded-xl overflow-hidden transform scale-105 shadow-xl relative"
+              variants={fadeIn}
+              whileHover={{ y: -5, transition: { duration: 0.2 } }}
+            >
+              <div className="absolute top-5 right-5 bg-gray-800 rounded-full px-3 py-1 text-xs font-medium">
+                Popular
               </div>
+              <div className="px-8 py-6">
+                <div className="flex items-center mb-2">
+                  <div className="w-8 h-8 bg-gray-800 rounded-full flex items-center justify-center mr-3">
+                    <svg
+                      className="w-4 h-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
+                      />
+                    </svg>
+                  </div>
+                  <h3 className="text-xl font-bold">Enterprise</h3>
+                </div>
+                <p className="text-gray-400 text-sm mb-6">
+                  For growing startups billed monthly.
+                </p>
+
+                <div className="mb-6">
+                  <div className="flex items-end">
+                    <span className="text-4xl font-bold">$60</span>
+                    <span className="text-gray-400 ml-2">/ per month</span>
+                  </div>
+                </div>
+
+                <button className="w-full py-3 rounded-md bg-white text-gray-900 hover:bg-gray-200 transition-colors mb-6">
+                  Get Started
+                </button>
+
+                <div>
+                  <h4 className="font-semibold mb-4">Features:</h4>
+                  <ul className="space-y-4">
+                    <li className="flex items-center">
+                      <div className="w-6 h-6 rounded-full flex items-center justify-center mr-3">
+                        <svg
+                          className="w-4 h-4"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"
+                          />
+                        </svg>
+                      </div>
+                      <span className="text-gray-300">Financial Workflows</span>
+                    </li>
+                    <li className="flex items-center">
+                      <div className="w-6 h-6 rounded-full flex items-center justify-center mr-3">
+                        <svg
+                          className="w-4 h-4"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+                          />
+                        </svg>
+                      </div>
+                      <span className="text-gray-300">
+                        Analytics & Reporting
+                      </span>
+                    </li>
+                    <li className="flex items-center">
+                      <div className="w-6 h-6 rounded-full flex items-center justify-center mr-3">
+                        <svg
+                          className="w-4 h-4"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z"
+                          />
+                        </svg>
+                      </div>
+                      <span className="text-gray-300">
+                        24/7 Customer Support
+                      </span>
+                    </li>
+                    <li className="flex items-center">
+                      <div className="w-6 h-6 rounded-full flex items-center justify-center mr-3">
+                        <svg
+                          className="w-4 h-4"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+                          />
+                        </svg>
+                      </div>
+                      <span className="text-gray-300">Secure Transactions</span>
+                    </li>
+                  </ul>
+                  <div className="mt-6 text-gray-400 text-sm">
+                    and 4 more <span className="inline-block ml-1">→</span>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+
+            {/* Business Plan */}
+            <motion.div
+              className="bg-gray-900/50 backdrop-blur-sm border border-gray-800 rounded-xl overflow-hidden"
+              variants={fadeIn}
+              whileHover={{ y: -5, transition: { duration: 0.2 } }}
+            >
+              <div className="px-8 py-6">
+                <div className="flex items-center mb-2">
+                  <div className="w-8 h-8 bg-gray-800 rounded-full flex items-center justify-center mr-3">
+                    <svg
+                      className="w-4 h-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                      />
+                    </svg>
+                  </div>
+                  <h3 className="text-xl font-bold">Business</h3>
+                </div>
+                <p className="text-gray-400 text-sm mb-6">
+                  For large companies billed monthly.
+                </p>
+
+                <div className="mb-6">
+                  <div className="flex items-end">
+                    <span className="text-4xl font-bold">$90</span>
+                    <span className="text-gray-400 ml-2">/ per month</span>
+                  </div>
+                </div>
+
+                <button className="w-full py-3 rounded-md border border-gray-700 hover:bg-gray-800 transition-colors mb-6">
+                  Get Started
+                </button>
+
+                <div>
+                  <h4 className="font-semibold mb-4">Features:</h4>
+                  <ul className="space-y-4">
+                    <li className="flex items-center">
+                      <div className="w-6 h-6 rounded-full flex items-center justify-center mr-3">
+                        <svg
+                          className="w-4 h-4"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"
+                          />
+                        </svg>
+                      </div>
+                      <span className="text-gray-300">Financial Workflows</span>
+                    </li>
+                    <li className="flex items-center">
+                      <div className="w-6 h-6 rounded-full flex items-center justify-center mr-3">
+                        <svg
+                          className="w-4 h-4"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+                          />
+                        </svg>
+                      </div>
+                      <span className="text-gray-300">
+                        Analytics & Reporting
+                      </span>
+                    </li>
+                    <li className="flex items-center">
+                      <div className="w-6 h-6 rounded-full flex items-center justify-center mr-3">
+                        <svg
+                          className="w-4 h-4"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z"
+                          />
+                        </svg>
+                      </div>
+                      <span className="text-gray-300">
+                        24/7 Customer Support
+                      </span>
+                    </li>
+                    <li className="flex items-center">
+                      <div className="w-6 h-6 rounded-full flex items-center justify-center mr-3">
+                        <svg
+                          className="w-4 h-4"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+                          />
+                        </svg>
+                      </div>
+                      <span className="text-gray-300">Secure Transactions</span>
+                    </li>
+                  </ul>
+                  <div className="mt-6 text-gray-400 text-sm">
+                    and 6 more <span className="inline-block ml-1">→</span>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* CTA Section */}
+      <section className="py-48 relative bg-gradient-to-b from-gray-900 to-black">
+        <div className="absolute top-0 left-0 right-0 h-20 bg-gradient-to-b from-gray-900 to-transparent backdrop-filter backdrop-blur-md z-10"></div>
+
+        {/* Cosmic Background */}
+        <div className="absolute inset-0 overflow-hidden">
+          {/* Background gradients */}
+          <div className="absolute w-full h-full bg-gradient-to-b from-transparent via-blue-950/20 to-black"></div>
+
+          {/* Stars */}
+          <ClientOnly>
+            <div className="absolute inset-0">
+              {[...Array(50)].map((_, i) => (
+                <motion.div
+                  key={i}
+                  className="absolute w-1 h-1 bg-white rounded-full"
+                  style={{
+                    left: `${Math.random() * 100}%`,
+                    top: `${Math.random() * 100}%`,
+                  }}
+                  animate={{
+                    opacity: [0.2, 0.8, 0.2],
+                    scale: [1, 1.2, 1],
+                  }}
+                  transition={{
+                    duration: Math.random() * 3 + 2,
+                    repeat: Infinity,
+                    ease: "easeInOut",
+                    delay: Math.random() * 2,
+                  }}
+                />
+              ))}
+            </div>
+          </ClientOnly>
+
+          {/* Larger glowing stars */}
+          <ClientOnly>
+            <div className="absolute inset-0">
+              {[...Array(10)].map((_, i) => (
+                <motion.div
+                  key={i}
+                  className="absolute w-2 h-2 bg-blue-400 rounded-full"
+                  style={{
+                    left: `${Math.random() * 100}%`,
+                    top: `${Math.random() * 100}%`,
+                    boxShadow: "0 0 10px 2px rgba(96, 165, 250, 0.3)",
+                  }}
+                  animate={{
+                    opacity: [0.3, 0.7, 0.3],
+                    scale: [1, 1.3, 1],
+                  }}
+                  transition={{
+                    duration: Math.random() * 4 + 3,
+                    repeat: Infinity,
+                    ease: "easeInOut",
+                    delay: Math.random() * 2,
+                  }}
+                />
+              ))}
+            </div>
+          </ClientOnly>
+
+          {/* Nebula-like gradients */}
+          <motion.div
+            className="absolute top-1/4 -left-1/4 w-96 h-96 bg-blue-500/10 rounded-full filter blur-[100px]"
+            animate={{
+              opacity: [0.3, 0.5, 0.3],
+              scale: [1, 1.1, 1],
+            }}
+            transition={{
+              duration: 8,
+              repeat: Infinity,
+              ease: "easeInOut",
+            }}
+          />
+          <motion.div
+            className="absolute bottom-1/4 -right-1/4 w-96 h-96 bg-purple-500/10 rounded-full filter blur-[100px]"
+            animate={{
+              opacity: [0.3, 0.5, 0.3],
+              scale: [1, 1.1, 1],
+            }}
+            transition={{
+              duration: 8,
+              repeat: Infinity,
+              ease: "easeInOut",
+              delay: 4,
+            }}
+          />
+        </div>
+
+        <div className="container mx-auto px-4 md:px-8 relative z-20">
+          <motion.div
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, amount: 0.2 }}
+            variants={fadeIn}
+            className="text-center"
+          >
+            <h2 className="text-4xl md:text-5xl font-bold mb-6">
+              Free to start, ready to scale
+            </h2>
+            <p className="text-xl text-gray-300 max-w-2xl mx-auto mb-10">
+              10K events/month free forever. From weekend projects to enterprise
+              scale, we've got you covered.
+            </p>
+
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+              <motion.button
+                variants={buttonHover}
+                initial="rest"
+                whileHover="hover"
+                onClick={() => router.push("/main")}
+                className="px-8 py-4 text-lg font-semibold rounded-md bg-blue-600 hover:bg-blue-700 transition-colors shadow-lg"
+              >
+                GET STARTED
+              </motion.button>
+              <motion.button
+                variants={buttonHover}
+                initial="rest"
+                whileHover="hover"
+                className="px-8 py-4 text-lg font-semibold rounded-md border border-gray-700 hover:bg-gray-800 transition-colors"
+              >
+                PRICING
+              </motion.button>
+            </div>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="py-20 border-t border-gray-800 mt-12">
+        <div className="container mx-auto px-4 md:px-8">
+          <div className="flex flex-col md:flex-row justify-between items-center">
+            <div className="mb-6 md:mb-0">
+              <h2 className="text-2xl font-bold">
+                Muscle<span className="text-blue-500">AI</span>
+              </h2>
+              <p className="text-gray-400 mt-2">
+                Transforming fitness with artificial intelligence
+              </p>
+            </div>
+
+            <div className="flex gap-6">
+              <Link
+                href="#"
+                className="text-gray-400 hover:text-white transition-colors"
+              >
+                Docs
+              </Link>
+              <Link
+                href="#"
+                className="text-gray-400 hover:text-white transition-colors"
+              >
+                Pricing
+              </Link>
+              <Link
+                href="#"
+                className="text-gray-400 hover:text-white transition-colors"
+              >
+                Blog
+              </Link>
+              <Link
+                href="#"
+                className="text-gray-400 hover:text-white transition-colors"
+              >
+                Contact
+              </Link>
             </div>
           </div>
-        )}
-      </div>
-    </main>
+
+          <div className="mt-8 pt-8 border-t border-gray-800 flex flex-col md:flex-row justify-between items-center">
+            <p className="text-gray-500 mb-4 md:mb-0">
+              © 2025 MuscleAI. All rights reserved.
+            </p>
+            <div className="flex gap-4">
+              <Link
+                href="/terms"
+                className="text-gray-500 hover:text-white transition-colors text-sm"
+              >
+                Terms of Service
+              </Link>
+              <Link
+                href="/privacy"
+                className="text-gray-500 hover:text-white transition-colors text-sm"
+              >
+                Privacy Policy
+              </Link>
+            </div>
+          </div>
+        </div>
+      </footer>
+    </div>
   );
 }
