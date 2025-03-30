@@ -468,15 +468,15 @@ export default function HomePage() {
               className="text-4xl md:text-5xl font-bold mb-4"
               variants={fadeIn}
             >
-              <span className="text-blue-500">&lt;Muscle /&gt;</span> batteries
-              included
+              <span className="text-blue-500">Strong</span> Muscle Analysis with
+              AI
             </motion.h2>
             <motion.p
               className="text-xl text-gray-300 max-w-2xl mx-auto"
               variants={fadeIn}
             >
-              Start with a component, scale with a platform. Everything you need
-              to build a world-class muscle analysis system.
+              Get real-time insights, personalized plans, and smart workout
+              recommendations to maximize your gains.
             </motion.p>
           </motion.div>
 
@@ -491,7 +491,7 @@ export default function HomePage() {
               {
                 title: "Personalized Plans",
                 description:
-                  "Allow users to get customized workouts based on their muscle analysis",
+                  "Custom workouts based on your muscle analysis",
                 icon: (
                   <svg
                     className="w-10 h-10 text-blue-500 mb-4"
@@ -557,7 +557,7 @@ export default function HomePage() {
               {
                 title: "Exercise Recommendations",
                 description:
-                  "Get tailored exercises for each muscle group that needs improvement",
+                  "Smart suggestions for muscle improvement",
                 icon: (
                   <svg
                     className="w-10 h-10 text-amber-500 mb-4"

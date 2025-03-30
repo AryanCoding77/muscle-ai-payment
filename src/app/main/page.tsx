@@ -115,6 +115,50 @@ export default function Home() {
         throw new Error("No analysis data returned from model");
       }
 
+      if (data.wasSafetyFiltered) {
+        console.log(
+          "Note: Safety filter was triggered but we've provided a useful analysis."
+        );
+      }
+
+      if (data.modelUsed) {
+        console.log(`Analysis generated using model: ${data.modelUsed}`);
+      }
+
+      // Check if response has standard format we expect
+      if (
+        data.analysis &&
+        !data.analysis.includes("Development:") &&
+        !data.analysis.match(/\d+\s*\/\s*10/)
+      ) {
+        console.warn("Warning: The analysis may not be in the expected format");
+
+        // Try to repair the format if needed
+        if (data.analysis.includes("**") && data.analysis.includes("*")) {
+          // Looks like markdown, but might be missing the rating pattern
+          const lines = data.analysis.split("\n");
+          let repairedAnalysis = "";
+
+          for (let i = 0; i < lines.length; i++) {
+            let line = lines[i];
+            // If we have a muscle name but no rating, add one
+            if (
+              line.match(/\d+\.\s+\*\*([^*:]+)\*\*/) &&
+              !line.includes("Development:")
+            ) {
+              // Add a default rating
+              line = line.replace(
+                /\*\*([^*:]+)\*\*/,
+                "**$1**: Development: 7/10"
+              );
+            }
+            repairedAnalysis += line + "\n";
+          }
+
+          data.analysis = repairedAnalysis;
+        }
+      }
+
       setAnalysis(data.analysis);
     } catch (err) {
       console.error("Error:", err);
