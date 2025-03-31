@@ -12,6 +12,7 @@ import { useAuth0 } from "@auth0/auth0-react";
 import { useRouter } from "next/navigation";
 import ProtectedRoute from "../../components/ProtectedRoute";
 import Link from "next/link";
+import { useUser } from "@/context/UserContext";
 
 export default function Home() {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
@@ -25,7 +26,8 @@ export default function Home() {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const lastAnalysisTime = useRef<number>(0);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const { user, logout } = useAuth0();
+  const { logout } = useAuth0();
+  const { userInfo } = useUser();
   const router = useRouter();
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -791,9 +793,9 @@ export default function Home() {
               onClick={() => setIsDropdownOpen(!isDropdownOpen)}
               className="flex items-center justify-center w-10 h-10 rounded-full bg-blue-500 hover:bg-blue-600 transition-colors"
             >
-              {user?.picture ? (
+              {userInfo?.picture ? (
                 <img
-                  src={user.picture}
+                  src={userInfo.picture}
                   alt="User"
                   className="w-10 h-10 rounded-full"
                 />
@@ -819,9 +821,9 @@ export default function Home() {
               <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
                 <div className="px-4 py-2 border-b border-gray-200">
                   <p className="text-sm font-medium text-gray-900">
-                    {user?.name || user?.email}
+                    {userInfo?.name || userInfo?.email}
                   </p>
-                  <p className="text-xs text-gray-500">{user?.email}</p>
+                  <p className="text-xs text-gray-500">{userInfo?.email}</p>
                 </div>
                 <button
                   onClick={() => router.push("/profile")}

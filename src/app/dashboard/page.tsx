@@ -2,9 +2,11 @@
 
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { useAuth0 } from "@auth0/auth0-react";
+import { useUser } from "@/context/UserContext";
 
 export default function DashboardPage() {
-  const { user, logout } = useAuth0();
+  const { logout } = useAuth0();
+  const { userInfo } = useUser();
 
   return (
     <ProtectedRoute>
@@ -29,7 +31,7 @@ export default function DashboardPage() {
 
               <div className="flex items-center space-x-4">
                 <div className="text-sm text-gray-300">
-                  Welcome, {user?.name || user?.email}
+                  Welcome, {userInfo?.name || userInfo?.email}
                 </div>
                 <button
                   onClick={() => logout({ returnTo: window.location.origin })}

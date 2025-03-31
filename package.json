@@ -10,6 +10,8 @@
   },
   "dependencies": {
     "@auth0/auth0-react": "^2.3.0",
+    "@auth0/nextjs-auth0": "^4.3.0",
+    "@supabase/supabase-js": "^2.49.4",
     "framer-motion": "^12.6.0",
     "next": "15.2.3",
     "react": "^19.0.0",
