@@ -90,11 +90,12 @@ export default function PricingPage() {
       {/* Add margin-top to account for fixed navbar */}
       <div className="pt-16">
         {/* Pricing Section */}
-        <section className="py-36 relative overflow-hidden bg-gradient-to-b from-gray-950 to-gray-900">
+        <section className="py-36 relative overflow-hidden bg-gray-950">
           <div className="absolute top-0 left-0 right-0 h-24 bg-gradient-to-b from-gray-950 to-transparent backdrop-filter backdrop-blur-md z-10"></div>
           <div className="absolute inset-0 overflow-hidden">
             <div className="absolute top-40 left-1/4 w-96 h-96 bg-blue-500 rounded-full filter blur-[180px] opacity-10"></div>
             <div className="absolute bottom-40 right-1/4 w-96 h-96 bg-emerald-500 rounded-full filter blur-[180px] opacity-10"></div>
+            <div className="absolute opacity-20 inset-0 bg-[radial-gradient(#000000_1px,transparent_1px)] [background-size:16px_16px]"></div>
           </div>
 
           <div className="container mx-auto px-4 md:px-8 relative z-10">
@@ -133,12 +134,16 @@ export default function PricingPage() {
             >
               {/* Starter Plan */}
               <motion.div
-                className="bg-gray-900/50 backdrop-blur-sm border border-gray-800 rounded-xl overflow-hidden p-8"
+                className="bg-blue-950/20 backdrop-blur-sm border border-blue-800/20 rounded-xl overflow-hidden p-8 relative shadow-[0_0_25px_rgba(30,64,175,0.15)]"
                 variants={fadeIn}
                 whileHover={{ y: -5, transition: { duration: 0.2 } }}
               >
-                <div className="mb-6 flex items-center">
-                  <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center mr-3">
+                <div className="absolute inset-0 bg-gradient-to-br from-blue-900/20 to-transparent pointer-events-none"></div>
+                <div className="absolute -top-24 -left-20 w-40 h-40 bg-blue-500/30 rounded-full filter blur-[50px]"></div>
+                <div className="absolute bottom-10 right-0 w-32 h-32 bg-blue-500/20 rounded-full filter blur-[40px]"></div>
+
+                <div className="flex items-center mb-6">
+                  <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center mr-3 shadow-[0_0_15px_rgba(59,130,246,0.7)]">
                     <svg
                       className="w-5 h-5 text-white"
                       fill="none"
@@ -168,7 +173,7 @@ export default function PricingPage() {
                 </div>
 
                 <Link href="/signup" className="block mb-10">
-                  <button className="w-full py-4 rounded-md border border-gray-700 hover:bg-gray-800 transition-colors font-medium">
+                  <button className="w-full py-4 rounded-md border border-blue-700/50 bg-blue-900/20 hover:bg-blue-800/30 transition-colors font-medium shadow-[0_0_10px_rgba(59,130,246,0.3)]">
                     Get Started
                   </button>
                 </Link>
@@ -252,18 +257,23 @@ export default function PricingPage() {
 
               {/* Enterprise Plan - Popular */}
               <motion.div
-                className="bg-gray-900/50 backdrop-blur-sm border border-purple-700/30 rounded-xl overflow-hidden p-8 relative"
+                className="bg-purple-950/30 backdrop-blur-sm border border-purple-700/30 rounded-xl overflow-hidden p-8 relative shadow-[0_0_25px_rgba(88,28,135,0.2)]"
                 variants={fadeIn}
                 whileHover={{ y: -5, transition: { duration: 0.2 } }}
               >
+                <div className="absolute inset-0 bg-gradient-to-b from-purple-500/20 to-blue-500/10 pointer-events-none"></div>
+                <div className="absolute -top-20 left-1/2 -translate-x-1/2 w-64 h-64 bg-purple-500/30 rounded-full filter blur-[60px]"></div>
+                <div className="absolute -bottom-32 right-0 w-56 h-56 bg-blue-500/30 rounded-full filter blur-[50px]"></div>
+                <div className="absolute top-20 right-10 w-20 h-20 bg-indigo-500/30 rounded-full filter blur-[30px]"></div>
+
                 <div className="absolute top-0 right-0 left-0">
-                  <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white text-center py-1 px-4 rounded-b-lg mx-auto w-fit text-sm font-medium">
+                  <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white text-center py-1 px-4 rounded-b-lg mx-auto w-fit text-sm font-medium shadow-lg shadow-purple-500/20">
                     Popular
                   </div>
                 </div>
 
                 <div className="mb-6 flex items-center mt-6">
-                  <div className="w-10 h-10 bg-purple-600 rounded-full flex items-center justify-center mr-3">
+                  <div className="w-10 h-10 bg-purple-600 rounded-full flex items-center justify-center mr-3 shadow-[0_0_20px_rgba(147,51,234,0.7)]">
                     <svg
                       className="w-5 h-5 text-white"
                       fill="none"
@@ -293,7 +303,7 @@ export default function PricingPage() {
                 </div>
 
                 <Link href="/signup" className="block mb-10">
-                  <button className="w-full py-4 rounded-md bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 transition-colors font-medium">
+                  <button className="w-full py-4 rounded-md bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 transition-colors font-medium shadow-[0_0_20px_rgba(147,51,234,0.4)]">
                     Get Started
                   </button>
                 </Link>
@@ -377,12 +387,16 @@ export default function PricingPage() {
 
               {/* Business Plan */}
               <motion.div
-                className="bg-gray-900/50 backdrop-blur-sm border border-gray-800 rounded-xl overflow-hidden p-8"
+                className="bg-emerald-950/20 backdrop-blur-sm border border-emerald-800/20 rounded-xl overflow-hidden p-8 relative shadow-[0_0_25px_rgba(4,120,87,0.15)]"
                 variants={fadeIn}
                 whileHover={{ y: -5, transition: { duration: 0.2 } }}
               >
-                <div className="mb-6 flex items-center">
-                  <div className="w-10 h-10 bg-emerald-600 rounded-full flex items-center justify-center mr-3">
+                <div className="absolute inset-0 bg-gradient-to-br from-emerald-900/20 to-transparent pointer-events-none"></div>
+                <div className="absolute -bottom-24 -right-20 w-48 h-48 bg-emerald-500/30 rounded-full filter blur-[50px]"></div>
+                <div className="absolute top-10 left-0 w-32 h-32 bg-emerald-500/20 rounded-full filter blur-[40px]"></div>
+
+                <div className="flex items-center mb-6">
+                  <div className="w-10 h-10 bg-emerald-600 rounded-full flex items-center justify-center mr-3 shadow-[0_0_15px_rgba(16,185,129,0.7)]">
                     <svg
                       className="w-5 h-5 text-white"
                       fill="none"
@@ -412,7 +426,7 @@ export default function PricingPage() {
                 </div>
 
                 <Link href="/signup" className="block mb-10">
-                  <button className="w-full py-4 rounded-md border border-gray-700 hover:bg-gray-800 transition-colors font-medium">
+                  <button className="w-full py-4 rounded-md border border-emerald-700/50 bg-emerald-900/20 hover:bg-emerald-800/30 transition-colors font-medium shadow-[0_0_10px_rgba(16,185,129,0.3)]">
                     Get Started
                   </button>
                 </Link>
