@@ -2243,7 +2243,7 @@ export default function HomePage() {
             className="text-center"
           >
             <h2 className="text-4xl md:text-5xl font-bold mb-6">
-              💪 Built for transformation, ready when you are
+              Built for transformation, ready when you are
             </h2>
             <p className="text-xl text-gray-300 max-w-2xl mx-auto mb-10">
               Get AI-powered muscle analysis & personalized workouts. No more
