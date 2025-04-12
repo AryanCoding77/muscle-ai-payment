@@ -167,24 +167,6 @@ export default function HomePage() {
             {/* Navigation Links - Desktop */}
             <div className="hidden md:flex items-center space-x-8">
               <Link
-                href="/products"
-                className="text-gray-300 hover:text-white transition-colors"
-              >
-                Products
-              </Link>
-              <Link
-                href="/docs"
-                className="text-gray-300 hover:text-white transition-colors"
-              >
-                Docs
-              </Link>
-              <Link
-                href="/solutions"
-                className="text-gray-300 hover:text-white transition-colors"
-              >
-                Solutions
-              </Link>
-              <Link
                 href="/about"
                 className="text-gray-300 hover:text-white transition-colors"
               >
@@ -276,27 +258,6 @@ export default function HomePage() {
         </button>
 
         <div className="flex flex-col items-center space-y-6 text-xl">
-          <Link
-            href="/products"
-            className="text-white hover:text-blue-400 transition-colors py-2"
-            onClick={toggleMobileMenu}
-          >
-            Products
-          </Link>
-          <Link
-            href="/docs"
-            className="text-white hover:text-blue-400 transition-colors py-2"
-            onClick={toggleMobileMenu}
-          >
-            Docs
-          </Link>
-          <Link
-            href="/solutions"
-            className="text-white hover:text-blue-400 transition-colors py-2"
-            onClick={toggleMobileMenu}
-          >
-            Solutions
-          </Link>
           <Link
             href="/about"
             className="text-white hover:text-blue-400 transition-colors py-2"
