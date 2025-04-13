@@ -753,7 +753,7 @@ export default function HomePage() {
 
           {/* Demo Embed */}
           <motion.div
-            className="mb-16 relative rounded-xl overflow-hidden border border-gray-800 shadow-2xl"
+            className="hidden md:block mb-16 relative rounded-xl overflow-hidden border border-gray-800 shadow-2xl"
             variants={fadeIn}
           >
             <ArcadeEmbed />
