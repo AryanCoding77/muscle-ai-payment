@@ -101,7 +101,7 @@ export default function ContactPage() {
 
   return (
     <div className="bg-black text-white min-h-screen">
-      <h1 className="sr-only">Contact Us</h1>
+      <h1 className="text-3xl font-bold text-center text-gray-100 mb-6">Contact Us</h1>
       {/* Navbar */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-gray-950/80 backdrop-blur-md border-b border-gray-800">
         <div className="container mx-auto px-4 md:px-8">
