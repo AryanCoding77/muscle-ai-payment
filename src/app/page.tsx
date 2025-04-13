@@ -1,7 +1,12 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { motion, useScroll, useTransform } from "framer-motion";
+import {
+  motion,
+  useScroll,
+  useTransform,
+  AnimatePresence,
+} from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
 import { useState, useEffect, ReactNode } from "react";
@@ -47,6 +52,36 @@ const ClientOnly = ({ children }: { children: ReactNode }) => {
   return isClient ? children : null;
 };
 
+export function ArcadeEmbed() {
+  return (
+    <div
+      style={{
+        position: "relative",
+        paddingBottom: "calc(51.90972222222222% + 41px)",
+        height: 0,
+        width: "100%",
+      }}
+    >
+      <iframe
+        src="https://demo.arcade.software/y7FloeGxaLcXOgdXBK30?embed&embed_mobile=tab&embed_desktop=inline&show_copy_link=true"
+        title="Get Comprehensive Muscle Insights with Ease"
+        frameBorder="0"
+        loading="lazy"
+        allowFullScreen
+        allow="clipboard-write"
+        style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          width: "100%",
+          height: "100%",
+          colorScheme: "light",
+        }}
+      />
+    </div>
+  );
+}
+
 export default function HomePage() {
   const router = useRouter();
   const { scrollY } = useScroll();
@@ -86,6 +121,22 @@ export default function HomePage() {
     });
   };
 
+  // Function to scroll to pricing section smoothly
+  const scrollToPricing = () => {
+    const pricingSection = document.getElementById("pricing");
+    if (pricingSection) {
+      pricingSection.scrollIntoView({ behavior: "smooth" });
+    }
+  };
+
+  // Function to scroll to contact section smoothly
+  const scrollToContact = () => {
+    const contactSection = document.getElementById("contact");
+    if (contactSection) {
+      contactSection.scrollIntoView({ behavior: "smooth" });
+    }
+  };
+
   // Toggle mobile menu
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen);
@@ -99,17 +150,40 @@ export default function HomePage() {
           className="mx-auto max-w-7xl rounded-full transition-all duration-300 border border-gray-800"
           style={{
             backgroundColor: isScrolled
-              ? "rgba(0, 0, 0, 0.75)"
-              : "rgba(0, 0, 0, 0.4)",
-            backdropFilter: "blur(10px)",
+              ? "rgba(0, 0, 0, 0.85)"
+              : "rgba(0, 0, 0, 0.5)",
+            backdropFilter: "blur(12px)",
             boxShadow: isScrolled
-              ? "0 10px 30px -10px rgba(0, 0, 0, 0.5)"
-              : "0 4px 20px rgba(0, 0, 0, 0.2)",
+              ? "0 10px 30px -10px rgba(0, 0, 0, 0.5), 0 0 20px rgba(59, 130, 246, 0.2)"
+              : "0 4px 20px rgba(0, 0, 0, 0.2), 0 0 10px rgba(59, 130, 246, 0.1)",
           }}
         >
-          <div className="flex items-center justify-between px-6 py-3">
-            {/* Logo */}
-            <div className="flex items-center">
+          {/* Animated gradient border */}
+          <div className="absolute inset-0 rounded-full overflow-hidden">
+            <motion.div
+              className="absolute inset-0 bg-gradient-to-r from-blue-500/20 via-purple-500/20 to-blue-500/20"
+              animate={{
+                backgroundPosition: ["0% 0%", "100% 0%"],
+                opacity: isScrolled ? [0.6, 0.8] : [0.3, 0.5],
+              }}
+              transition={{
+                duration: 8,
+                repeat: Infinity,
+                ease: "linear",
+              }}
+            />
+          </div>
+
+          <div className="flex items-center justify-between px-6 py-3 relative">
+            {/* Logo with glow effect */}
+            <div className="flex items-center relative group">
+              <motion.div
+                className="absolute -inset-1 bg-blue-500/20 rounded-full blur-md opacity-0 group-hover:opacity-70 transition-opacity duration-300"
+                animate={{
+                  scale: [1, 1.05, 1],
+                }}
+                transition={{ duration: 2, repeat: Infinity }}
+              />
               <div className="w-10 h-10 relative mr-2">
                 <svg viewBox="0 0 100 100" className="w-full h-full">
                   {/* Horizontal bar */}
@@ -159,54 +233,116 @@ export default function HomePage() {
                   />
                 </svg>
               </div>
-              <Link href="/" className="text-xl font-bold">
+              <Link href="/" className="text-xl font-bold relative">
                 Muscle<span className="text-blue-500">AI</span>
+                <motion.div
+                  className="absolute -inset-1 bg-blue-500/20 rounded-lg blur-sm -z-10 opacity-0 group-hover:opacity-100"
+                  transition={{ duration: 0.3 }}
+                />
               </Link>
             </div>
 
             {/* Navigation Links - Desktop */}
             <div className="hidden md:flex items-center space-x-8">
+              {/* Glowing navigation link items */}
               <Link
                 href="/about"
-                className="text-gray-300 hover:text-white transition-colors"
+                className="text-gray-300 hover:text-white transition-colors relative group px-3 py-2"
               >
                 About
+                <motion.div
+                  className="absolute inset-0 bg-blue-500/0 group-hover:bg-blue-500/10 rounded-lg -z-10 transition-colors duration-300"
+                  whileHover={{ scale: 1.05 }}
+                  transition={{ duration: 0.2 }}
+                />
+                <motion.div className="absolute -bottom-1 left-0 h-0.5 w-0 group-hover:w-full bg-gradient-to-r from-blue-500 to-purple-500 transition-all duration-300" />
               </Link>
               <Link
                 href="/customers"
-                className="text-gray-300 hover:text-white transition-colors"
+                className="text-gray-300 hover:text-white transition-colors relative group px-3 py-2"
               >
                 Customers
+                <motion.div
+                  className="absolute inset-0 bg-blue-500/0 group-hover:bg-blue-500/10 rounded-lg -z-10 transition-colors duration-300"
+                  whileHover={{ scale: 1.05 }}
+                  transition={{ duration: 0.2 }}
+                />
+                <motion.div className="absolute -bottom-1 left-0 h-0.5 w-0 group-hover:w-full bg-gradient-to-r from-blue-500 to-purple-500 transition-all duration-300" />
               </Link>
               <Link
-                href="/pricing"
-                className="text-gray-300 hover:text-white transition-colors"
+                href="#pricing"
+                onClick={(e) => {
+                  scrollToPricing();
+                  toggleMobileMenu();
+                }}
+                className="text-gray-300 hover:text-white transition-colors relative group px-3 py-2"
               >
                 Pricing
+                <motion.div
+                  className="absolute inset-0 bg-blue-500/0 group-hover:bg-blue-500/10 rounded-lg -z-10 transition-colors duration-300"
+                  whileHover={{ scale: 1.05 }}
+                  transition={{ duration: 0.2 }}
+                />
+                <motion.div className="absolute -bottom-1 left-0 h-0.5 w-0 group-hover:w-full bg-gradient-to-r from-blue-500 to-purple-500 transition-all duration-300" />
               </Link>
               <Link
                 href="/contact"
-                className="text-gray-300 hover:text-white transition-colors"
+                onClick={toggleMobileMenu}
+                className="text-gray-300 hover:text-white transition-colors relative group px-3 py-2"
               >
                 Contact
+                <motion.div
+                  className="absolute inset-0 bg-blue-500/0 group-hover:bg-blue-500/10 rounded-lg -z-10 transition-colors duration-300"
+                  whileHover={{ scale: 1.05 }}
+                  transition={{ duration: 0.2 }}
+                />
+                <motion.div className="absolute -bottom-1 left-0 h-0.5 w-0 group-hover:w-full bg-gradient-to-r from-blue-500 to-purple-500 transition-all duration-300" />
               </Link>
             </div>
 
             {/* Auth Buttons */}
             <div className="flex items-center space-x-4">
-              <Link
-                href="/login"
-                className="bg-white text-black hover:bg-gray-200 transition-colors px-4 py-2 rounded-full font-medium"
-              >
-                Login →
+              <Link href="/login" className="relative group">
+                <motion.div
+                  className="absolute -inset-0.5 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 rounded-full blur-sm opacity-75 group-hover:opacity-100 transition-all duration-300 animate-gradient-x"
+                  initial={{ opacity: 0.75 }}
+                  animate={{ opacity: [0.75, 0.9, 0.75] }}
+                  transition={{ duration: 3, repeat: Infinity }}
+                />
+                <motion.div
+                  className="relative px-6 py-2.5 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full text-white font-medium shadow-lg group-hover:shadow-blue-500/40 transition-all duration-300"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  <div className="flex items-center justify-center">
+                    <span className="mr-1.5">Login</span>
+                    <motion.span
+                      className="inline-block"
+                      initial={{ x: 0 }}
+                      whileHover={{ x: 3 }}
+                      transition={{ type: "spring", stiffness: 300 }}
+                    >
+                      →
+                    </motion.span>
+                  </div>
+                </motion.div>
               </Link>
 
               {/* Mobile menu button */}
-              <button
+              <motion.button
                 onClick={toggleMobileMenu}
-                className="md:hidden flex items-center"
+                className="md:hidden flex items-center relative group"
                 aria-label="Toggle mobile menu"
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.95 }}
               >
+                <motion.div
+                  className="absolute inset-0 bg-blue-500/20 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300 -z-10"
+                  animate={{
+                    scale: [1, 1.2, 1],
+                  }}
+                  transition={{ duration: 2, repeat: Infinity }}
+                />
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   className="h-6 w-6"
@@ -221,7 +357,7 @@ export default function HomePage() {
                     d="M4 6h16M4 12h16m-7 6h7"
                   />
                 </svg>
-              </button>
+              </motion.button>
             </div>
           </div>
         </motion.div>
@@ -229,18 +365,71 @@ export default function HomePage() {
 
       {/* Mobile Menu */}
       <motion.div
-        className={`fixed inset-0 bg-black/90 backdrop-blur-sm z-40 md:hidden ${
+        className={`fixed inset-0 bg-black/95 backdrop-blur-lg z-40 md:hidden ${
           isMobileMenuOpen ? "flex" : "hidden"
         } flex-col items-center justify-center`}
         initial={{ opacity: 0 }}
         animate={{ opacity: isMobileMenuOpen ? 1 : 0 }}
-        transition={{ duration: 0.2 }}
+        transition={{ duration: 0.3 }}
       >
-        <button
+        {/* Background effects */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <motion.div
+            className="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-500/10 rounded-full filter blur-[100px]"
+            animate={{
+              scale: [1, 1.2, 1],
+              opacity: [0.3, 0.5, 0.3],
+              rotate: [0, 360],
+            }}
+            transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+          />
+          <motion.div
+            className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-500/10 rounded-full filter blur-[100px]"
+            animate={{
+              scale: [1.2, 1, 1.2],
+              opacity: [0.3, 0.5, 0.3],
+              rotate: [360, 0],
+            }}
+            transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+          />
+
+          {/* Animated particles */}
+          {[...Array(10)].map((_, i) => (
+            <motion.div
+              key={i}
+              className="absolute w-1 h-1 bg-blue-400 rounded-full"
+              style={{
+                left: `${Math.random() * 100}%`,
+                top: `${Math.random() * 100}%`,
+              }}
+              animate={{
+                y: [0, -30, 0],
+                opacity: [0, 1, 0],
+                scale: [0, 1, 0],
+              }}
+              transition={{
+                duration: Math.random() * 3 + 2,
+                repeat: Infinity,
+                delay: Math.random() * 2,
+              }}
+            />
+          ))}
+        </div>
+
+        <motion.button
           onClick={toggleMobileMenu}
-          className="absolute top-6 right-6 p-2 text-white"
+          className="absolute top-6 right-6 p-2 text-white rounded-full group"
           aria-label="Close menu"
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.95 }}
         >
+          <motion.div
+            className="absolute inset-0 bg-blue-500/0 group-hover:bg-blue-500/20 rounded-full -z-10 transition-all duration-300"
+            animate={{
+              scale: [1, 1.1, 1],
+            }}
+            transition={{ duration: 2, repeat: Infinity }}
+          />
           <svg
             xmlns="http://www.w3.org/2000/svg"
             className="h-8 w-8"
@@ -255,45 +444,155 @@ export default function HomePage() {
               d="M6 18L18 6M6 6l12 12"
             />
           </svg>
-        </button>
+        </motion.button>
 
-        <div className="flex flex-col items-center space-y-6 text-xl">
+        <div className="flex flex-col items-center space-y-6 text-xl relative z-10">
+          <motion.div
+            className="mb-8 flex items-center"
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+          >
+            <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center mr-4 shadow-lg shadow-blue-500/20">
+              <svg
+                className="w-10 h-10 text-white"
+                viewBox="0 0 100 100"
+                fill="none"
+                stroke="currentColor"
+              >
+                <rect x="25" y="45" width="50" height="10" fill="white" />
+                <rect
+                  x="10"
+                  y="30"
+                  width="15"
+                  height="40"
+                  rx="5"
+                  fill="white"
+                />
+                <rect
+                  x="75"
+                  y="30"
+                  width="15"
+                  height="40"
+                  rx="5"
+                  fill="white"
+                />
+              </svg>
+            </div>
+            <span className="text-3xl font-bold bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">
+              MuscleAI
+            </span>
+          </motion.div>
+
+          {/* Mobile menu links with animations */}
           <Link
             href="/about"
-            className="text-white hover:text-blue-400 transition-colors py-2"
+            className="relative group"
             onClick={toggleMobileMenu}
           >
-            About
+            <motion.div
+              className="text-white group-hover:text-blue-400 transition-colors py-2 px-8 relative"
+              whileHover={{ x: 5 }}
+              transition={{ type: "spring", stiffness: 300 }}
+            >
+              About
+              <motion.div
+                className="absolute -bottom-1 left-0 h-0.5 w-0 group-hover:w-full bg-gradient-to-r from-blue-500 to-purple-500 transition-all duration-300"
+                layoutId="mobileUnderline"
+              />
+            </motion.div>
           </Link>
           <Link
             href="/customers"
-            className="text-white hover:text-blue-400 transition-colors py-2"
+            className="relative group"
             onClick={toggleMobileMenu}
           >
-            Customers
+            <motion.div
+              className="text-white group-hover:text-blue-400 transition-colors py-2 px-8 relative"
+              whileHover={{ x: 5 }}
+              transition={{ type: "spring", stiffness: 300 }}
+            >
+              Customers
+              <motion.div className="absolute -bottom-1 left-0 h-0.5 w-0 group-hover:w-full bg-gradient-to-r from-blue-500 to-purple-500 transition-all duration-300" />
+            </motion.div>
           </Link>
           <Link
-            href="/pricing"
-            className="text-white hover:text-blue-400 transition-colors py-2"
-            onClick={toggleMobileMenu}
+            href="#pricing"
+            onClick={(e) => {
+              scrollToPricing();
+              toggleMobileMenu();
+            }}
+            className="relative group"
           >
-            Pricing
+            <motion.div
+              className="text-white group-hover:text-blue-400 transition-colors py-2 px-8 relative"
+              whileHover={{ x: 5 }}
+              transition={{ type: "spring", stiffness: 300 }}
+            >
+              Pricing
+              <motion.div className="absolute -bottom-1 left-0 h-0.5 w-0 group-hover:w-full bg-gradient-to-r from-blue-500 to-purple-500 transition-all duration-300" />
+            </motion.div>
           </Link>
           <Link
             href="/contact"
-            className="text-white hover:text-blue-400 transition-colors py-2"
             onClick={toggleMobileMenu}
+            className="relative group"
           >
-            Contact
+            <motion.div
+              className="text-white group-hover:text-blue-400 transition-colors py-2 px-8 relative"
+              whileHover={{ x: 5 }}
+              transition={{ type: "spring", stiffness: 300 }}
+            >
+              Contact
+              <motion.div className="absolute -bottom-1 left-0 h-0.5 w-0 group-hover:w-full bg-gradient-to-r from-blue-500 to-purple-500 transition-all duration-300" />
+            </motion.div>
           </Link>
 
-          <Link
-            href="/login"
-            className="mt-4 bg-blue-600 text-white hover:bg-blue-700 transition-colors px-8 py-3 rounded-full font-medium"
-            onClick={toggleMobileMenu}
+          <motion.div
+            className="mt-8"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5 }}
           >
-            Login →
-          </Link>
+            <Link
+              href="/login"
+              className="relative group overflow-hidden inline-block"
+              onClick={toggleMobileMenu}
+            >
+              <div className="relative px-8 py-3 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg text-white font-medium transition-all duration-300 overflow-hidden">
+                <span className="relative z-10 flex items-center">
+                  Login
+                  <motion.svg
+                    className="w-4 h-4 ml-2"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                    animate={{ x: [0, 4, 0] }}
+                    transition={{ duration: 1.5, repeat: Infinity }}
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M14 5l7 7m0 0l-7 7m7-7H3"
+                    />
+                  </motion.svg>
+                </span>
+                <motion.div
+                  className="absolute inset-0 bg-white opacity-0 group-hover:opacity-20 transition-opacity duration-300"
+                  whileHover={{ scale: 1.05 }}
+                  transition={{ duration: 0.3 }}
+                />
+              </div>
+              <motion.div
+                className="absolute -inset-1 bg-gradient-to-r from-blue-400 to-purple-500 rounded-lg blur-md opacity-70 group-hover:opacity-100 transition-opacity duration-300 -z-10"
+                animate={{
+                  scale: [1, 1.05, 1],
+                }}
+                transition={{ duration: 2, repeat: Infinity }}
+              />
+            </Link>
+          </motion.div>
         </div>
       </motion.div>
 
@@ -331,8 +630,70 @@ export default function HomePage() {
       {/* Hero Section - Add top padding to account for the navbar */}
       <section className="relative min-h-screen flex flex-col items-center justify-center px-4 md:px-8 py-28 pt-32 bg-gradient-to-b from-black via-gray-950 to-gray-900">
         <div className="absolute inset-0 overflow-hidden">
-          <div className="absolute top-40 left-1/4 w-72 h-72 bg-blue-500 rounded-full filter blur-[100px] opacity-20"></div>
-          <div className="absolute bottom-40 right-1/4 w-80 h-80 bg-purple-500 rounded-full filter blur-[100px] opacity-20"></div>
+          {/* Main background glows */}
+          <motion.div
+            className="absolute top-40 left-1/4 w-72 h-72 bg-blue-500 rounded-full filter blur-[150px] opacity-20"
+            animate={{
+              scale: [1, 1.2, 1],
+              opacity: [0.15, 0.25, 0.15],
+            }}
+            transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
+          />
+          <motion.div
+            className="absolute bottom-40 right-1/4 w-80 h-80 bg-purple-500 rounded-full filter blur-[150px] opacity-20"
+            animate={{
+              scale: [1.2, 1, 1.2],
+              opacity: [0.15, 0.25, 0.15],
+            }}
+            transition={{
+              duration: 10,
+              repeat: Infinity,
+              ease: "easeInOut",
+              delay: 2,
+            }}
+          />
+          <motion.div
+            className="absolute top-1/3 right-1/3 w-64 h-64 bg-emerald-500 rounded-full filter blur-[120px] opacity-10"
+            animate={{
+              scale: [0.9, 1.1, 0.9],
+              opacity: [0.05, 0.15, 0.05],
+              y: [-20, 20, -20],
+            }}
+            transition={{
+              duration: 12,
+              repeat: Infinity,
+              ease: "easeInOut",
+              delay: 1,
+            }}
+          />
+
+          {/* Moving stars/particles */}
+          <div className="absolute inset-0">
+            {[...Array(20)].map((_, i) => (
+              <motion.div
+                key={`star-${i}`}
+                className="absolute w-1 h-1 bg-white rounded-full"
+                style={{
+                  left: `${Math.random() * 100}%`,
+                  top: `${Math.random() * 100}%`,
+                }}
+                animate={{
+                  y: [0, -30, 0],
+                  opacity: [0, 0.7, 0],
+                  scale: [0, 1, 0],
+                }}
+                transition={{
+                  duration: Math.random() * 3 + 2,
+                  repeat: Infinity,
+                  delay: Math.random() * 2,
+                }}
+              />
+            ))}
+          </div>
+
+          {/* Animated grid pattern overlay */}
+          <div className="absolute inset-0 bg-[radial-gradient(#ffffff10_1px,transparent_1px)] [background-size:20px_20px] opacity-25"></div>
+
           <div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-gray-900 to-transparent backdrop-filter backdrop-blur-md"></div>
         </div>
 
@@ -384,32 +745,18 @@ export default function HomePage() {
               initial="rest"
               whileHover="hover"
               className="px-8 py-4 text-lg font-semibold rounded-md border border-gray-700 hover:bg-gray-800 transition-colors"
+              onClick={scrollToPricing}
             >
-              EXPLORE DEMO
+              SEE PLANS
             </motion.button>
           </motion.div>
 
-          {/* App Preview Image */}
+          {/* Demo Embed */}
           <motion.div
-            className="relative w-full h-[500px] rounded-xl overflow-hidden shadow-2xl border border-gray-800"
+            className="mb-16 relative rounded-xl overflow-hidden border border-gray-800 shadow-2xl"
             variants={fadeIn}
           >
-            <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/30 z-10 rounded-xl"></div>
-            <Image
-              src="/app-preview.jpg"
-              alt="Muscle AI App Preview"
-              fill
-              className="object-cover"
-              onError={(e) => {
-                // Prevent infinite loop by setting a flag in the element's dataset
-                if (!e.currentTarget.dataset.errorHandled) {
-                  e.currentTarget.dataset.errorHandled = "true";
-                  // Use a static fallback image instead of reloading the same URL
-                  e.currentTarget.src =
-                    "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTIwMCIgaGVpZ2h0PSI2MDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjEyMDAiIGhlaWdodD0iNjAwIiBmaWxsPSIjMTIxODI2Ii8+PHRleHQgeD0iNjAwIiB5PSIzMDAiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIzNiIgZmlsbD0iIzY2NiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgYWxpZ25tZW50LWJhc2VsaW5lPSJtaWRkbGUiPk11c2NsZSBBSSBBcHAgUHJldmlldzwvdGV4dD48L3N2Zz4=";
-                }
-              }}
-            />
+            <ArcadeEmbed />
           </motion.div>
         </motion.div>
       </section>
@@ -585,50 +932,166 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Part of your Stack Section */}
-      <section className="py-36 relative overflow-hidden bg-gradient-to-b from-indigo-950/10 via-blue-950/5 to-gray-950">
-        <div className="absolute top-0 left-0 right-0 h-36 bg-gradient-to-b from-indigo-950/10 to-transparent backdrop-filter backdrop-blur-sm z-10"></div>
+      {/* Part of your fitness journey section */}
+      <section className="py-24 bg-black relative overflow-hidden">
+        {/* Animated background effects */}
         <div className="absolute inset-0 overflow-hidden">
-          <div className="absolute top-40 right-1/4 w-96 h-96 bg-blue-500 rounded-full filter blur-[120px] opacity-10"></div>
-          <div className="absolute bottom-20 left-1/3 w-80 h-80 bg-purple-500 rounded-full filter blur-[100px] opacity-10"></div>
-          <div className="absolute inset-0 bg-gradient-radial from-indigo-900/5 via-transparent to-transparent"></div>
+          <motion.div
+            className="absolute top-1/4 right-1/3 w-96 h-96 bg-blue-500/10 rounded-full filter blur-[120px]"
+            animate={{
+              x: [0, 30, 0],
+              opacity: [0.3, 0.5, 0.3],
+            }}
+            transition={{
+              duration: 8,
+              repeat: Infinity,
+              ease: "easeInOut",
+            }}
+          />
+          <motion.div
+            className="absolute bottom-1/4 left-1/3 w-80 h-80 bg-purple-500/10 rounded-full filter blur-[100px]"
+            animate={{
+              x: [0, -20, 0],
+              opacity: [0.2, 0.4, 0.2],
+            }}
+            transition={{
+              duration: 7,
+              repeat: Infinity,
+              ease: "easeInOut",
+              delay: 1,
+            }}
+          />
+          <motion.div
+            className="absolute top-2/3 right-1/4 w-64 h-64 bg-indigo-500/10 rounded-full filter blur-[90px]"
+            animate={{
+              y: [0, -15, 0],
+              opacity: [0.2, 0.3, 0.2],
+            }}
+            transition={{
+              duration: 6,
+              repeat: Infinity,
+              ease: "easeInOut",
+              delay: 2,
+            }}
+          />
+          <motion.div
+            className="absolute top-0 left-0 right-0 h-1/2 bg-gradient-to-b from-blue-900/5 to-transparent opacity-30"
+            animate={{
+              opacity: [0.3, 0.2, 0.3],
+            }}
+            transition={{
+              duration: 5,
+              repeat: Infinity,
+              ease: "easeInOut",
+            }}
+          />
+          <div className="absolute opacity-10 inset-0 bg-[radial-gradient(#3b82f6_1px,transparent_1px)] [background-size:20px_20px]"></div>
         </div>
 
         <div className="container mx-auto px-4 md:px-8 relative z-10">
-          <div className="flex flex-col lg:flex-row justify-between items-center">
-            <motion.div
-              className="lg:w-1/2 mb-12 lg:mb-0 pr-0 lg:pr-12"
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true, amount: 0.2 }}
-              variants={staggerContainer}
-            >
+          <div className="flex flex-col lg:flex-row items-center justify-between gap-12">
+            {/* Left content */}
+            <div className="max-w-2xl">
               <motion.h2
-                className="text-4xl md:text-5xl font-bold mb-6"
-                variants={fadeIn}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6 }}
+                viewport={{ once: true }}
+                className="text-6xl md:text-7xl font-bold mb-8 tracking-tight"
               >
-                Part of your Fitness Journey
+                <motion.span
+                  className="inline-block bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-indigo-400 to-blue-600"
+                  animate={{
+                    backgroundPosition: [
+                      "0% center",
+                      "100% center",
+                      "0% center",
+                    ],
+                  }}
+                  transition={{
+                    duration: 8,
+                    repeat: Infinity,
+                    ease: "easeInOut",
+                  }}
+                  style={{ backgroundSize: "200% auto" }}
+                >
+                  Part
+                </motion.span>{" "}
+                <span className="text-white">of your</span>{" "}
+                <span className="inline-block relative">
+                  <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500">
+                    Fitness Journey
+                  </span>
+                  <motion.span
+                    className="absolute -bottom-2 left-0 right-0 h-[3px] bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 rounded-full"
+                    initial={{ width: "0%" }}
+                    whileInView={{ width: "100%" }}
+                    transition={{ duration: 1, delay: 0.8 }}
+                    viewport={{ once: true }}
+                  ></motion.span>
+                </span>
               </motion.h2>
 
               <motion.p
-                className="text-xl text-gray-300 mb-8"
-                variants={fadeIn}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.2 }}
+                viewport={{ once: true }}
+                className="text-xl text-gray-300 leading-relaxed mb-10 max-w-xl"
               >
-                MuscleAI fits right into your daily routine. Whether you're a
-                beginner or a pro, it gives you clear, AI-powered guidance to
-                build muscle effectively — no extra apps required.
+                <span className="text-blue-400 font-medium">MuscleAI</span> fits
+                right into your daily routine. Whether you're a beginner or a
+                pro, it gives you{" "}
+                <span className="text-purple-400 font-medium">
+                  clear, AI-powered guidance
+                </span>{" "}
+                to build muscle effectively —{" "}
+                <motion.span
+                  className="italic"
+                  animate={{ color: ["#9ca3af", "#a5b4fc", "#9ca3af"] }}
+                  transition={{
+                    duration: 3,
+                    repeat: Infinity,
+                    ease: "easeInOut",
+                  }}
+                >
+                  no extra apps required
+                </motion.span>
+                .
               </motion.p>
 
-              <motion.button
-                variants={buttonHover}
-                initial="rest"
-                whileHover="hover"
-                className="px-8 py-4 text-lg font-semibold rounded-md bg-blue-600 hover:bg-blue-700 transition-colors shadow-lg"
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.3 }}
+                viewport={{ once: true }}
               >
-                GET STARTED
-              </motion.button>
-            </motion.div>
+                <Link href="/login" className="group inline-flex items-center">
+                  <motion.span
+                    className="relative px-8 py-3 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 rounded-full text-white font-bold text-lg shadow-lg group-hover:shadow-blue-500/40 transition-all duration-300"
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    GET STARTED
+                    <span className="absolute inset-0 rounded-full bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity"></span>
+                    <motion.span
+                      className="absolute inset-0 rounded-full border-2 border-white/30"
+                      animate={{
+                        opacity: [0, 0.5, 0],
+                        scale: [0.8, 1.2, 0.8],
+                      }}
+                      transition={{
+                        duration: 2,
+                        repeat: Infinity,
+                        ease: "easeInOut",
+                      }}
+                    ></motion.span>
+                  </motion.span>
+                </Link>
+              </motion.div>
+            </div>
 
+            {/* Right content */}
             <motion.div
               className="lg:w-1/2 relative"
               initial={{ opacity: 0 }}
@@ -1309,6 +1772,7 @@ export default function HomePage() {
                 variants={buttonHover}
                 initial="rest"
                 whileHover="hover"
+                onClick={() => router.push("/main")}
                 className="px-10 py-5 text-lg font-semibold rounded-md bg-blue-600 hover:bg-blue-700 transition-colors shadow-lg"
               >
                 ANALYZE NOW
@@ -1650,7 +2114,10 @@ export default function HomePage() {
       </section>
 
       {/* Pricing Section */}
-      <section className="py-36 relative overflow-hidden bg-gradient-to-b from-gray-950 to-gray-900">
+      <section
+        id="pricing"
+        className="py-36 relative overflow-hidden bg-gradient-to-b from-gray-950 to-gray-900"
+      >
         <div className="absolute top-0 left-0 right-0 h-24 bg-gradient-to-b from-gray-950 to-transparent backdrop-filter backdrop-blur-md z-10"></div>
 
         {/* Animated background elements */}
@@ -2106,7 +2573,10 @@ export default function HomePage() {
       </section>
 
       {/* CTA Section */}
-      <section className="py-48 relative bg-gradient-to-b from-gray-900 to-black">
+      <section
+        id="contact"
+        className="py-48 relative bg-gradient-to-b from-gray-900 to-black"
+      >
         <div className="absolute top-0 left-0 right-0 h-20 bg-gradient-to-b from-gray-900 to-transparent backdrop-filter backdrop-blur-md z-10"></div>
 
         {/* Cosmic Background */}
@@ -2226,6 +2696,7 @@ export default function HomePage() {
                 initial="rest"
                 whileHover="hover"
                 className="px-8 py-4 text-lg font-semibold rounded-md border border-gray-700 hover:bg-gray-800 transition-colors"
+                onClick={scrollToPricing}
               >
                 PRICING
               </motion.button>
@@ -2249,25 +2720,26 @@ export default function HomePage() {
 
             <div className="flex gap-6">
               <Link
-                href="#"
+                href="/about"
                 className="text-gray-400 hover:text-white transition-colors"
               >
-                Docs
+                About
               </Link>
               <Link
-                href="#"
+                href="/customers"
+                className="text-gray-400 hover:text-white transition-colors"
+              >
+                Customers
+              </Link>
+              <Link
+                href="#pricing"
+                onClick={scrollToPricing}
                 className="text-gray-400 hover:text-white transition-colors"
               >
                 Pricing
               </Link>
               <Link
-                href="#"
-                className="text-gray-400 hover:text-white transition-colors"
-              >
-                Blog
-              </Link>
-              <Link
-                href="#"
+                href="/contact"
                 className="text-gray-400 hover:text-white transition-colors"
               >
                 Contact

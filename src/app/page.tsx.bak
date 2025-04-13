@@ -1,0 +1,688 @@
+"use client";
+
+import { useRouter } from "next/navigation";
+import { motion, useScroll, useTransform } from "framer-motion";
+import Image from "next/image";
+import Link from "next/link";
+import { useState, useEffect, ReactNode } from "react";
+
+const fadeIn = {
+  hidden: { opacity: 0, y: 20 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.6 },
+  },
+};
+
+const staggerContainer = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.2,
+    },
+  },
+};
+
+const buttonHover = {
+  rest: { scale: 1 },
+  hover: {
+    scale: 1.05,
+    transition: {
+      duration: 0.3,
+      ease: "easeInOut",
+    },
+  },
+};
+
+// Create a ClientOnly component that renders children only on the client side
+const ClientOnly = ({ children }: { children: ReactNode }) => {
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
+  return isClient ? children : null;
+};
+
+export default function HomePage() {
+  const router = useRouter();
+  const { scrollY } = useScroll();
+  const [isScrolled, setIsScrolled] = useState(false);
+  const [showScrollTop, setShowScrollTop] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  // Transform navbar background opacity based on scroll position
+  const navbarBgOpacity = useTransform(scrollY, [0, 50], [0, 1]);
+
+  // Check if page has scrolled to update navbar appearance
+  useEffect(() => {
+    const handleScroll = () => {
+      if (window.scrollY > 10) {
+        setIsScrolled(true);
+      } else {
+        setIsScrolled(false);
+      }
+
+      // Show scroll to top button when user has scrolled down a bit
+      if (window.scrollY > 500) {
+        setShowScrollTop(true);
+      } else {
+        setShowScrollTop(false);
+      }
+    };
+
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  // Function to scroll to top smoothly
+  const scrollToTop = () => {
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth",
+    });
+  };
+
+  // Toggle mobile menu
+  const toggleMobileMenu = () => {
+    setIsMobileMenuOpen(!isMobileMenuOpen);
+  };
+
+  return (
+    <div className="bg-black text-white overflow-x-hidden">
+      {/* Floating Navbar */}
+      <motion.div className="fixed top-6 left-0 right-0 w-full z-50 px-4">
+        <motion.div
+          className="mx-auto max-w-7xl rounded-full transition-all duration-300 border border-gray-800"
+          style={{
+            backgroundColor: isScrolled
+              ? "rgba(0, 0, 0, 0.75)"
+              : "rgba(0, 0, 0, 0.4)",
+            backdropFilter: "blur(10px)",
+            boxShadow: isScrolled
+              ? "0 10px 30px -10px rgba(0, 0, 0, 0.5)"
+              : "0 4px 20px rgba(0, 0, 0, 0.2)",
+          }}
+        >
+          <div className="flex items-center justify-between px-6 py-3">
+            {/* Logo */}
+            <div className="flex items-center">
+              <div className="w-10 h-10 relative mr-2">
+                <svg viewBox="0 0 100 100" className="w-full h-full">
+                  {/* Horizontal bar */}
+                  <motion.rect
+                    x="25"
+                    y="45"
+                    width="50"
+                    height="10"
+                    fill="white"
+                    initial={{ scaleX: 0 }}
+                    animate={{ scaleX: 1 }}
+                    transition={{ duration: 0.6, ease: "easeInOut" }}
+                  />
+
+                  {/* Left weight */}
+                  <motion.rect
+                    x="10"
+                    y="30"
+                    width="15"
+                    height="40"
+                    rx="5"
+                    fill="white"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{
+                      duration: 0.6,
+                      delay: 0.3,
+                      ease: "easeInOut",
+                    }}
+                  />
+
+                  {/* Right weight */}
+                  <motion.rect
+                    x="75"
+                    y="30"
+                    width="15"
+                    height="40"
+                    rx="5"
+                    fill="white"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{
+                      duration: 0.6,
+                      delay: 0.3,
+                      ease: "easeInOut",
+                    }}
+                  />
+                </svg>
+              </div>
+              <Link href="/" className="text-xl font-bold">
+                Muscle<span className="text-blue-500">AI</span>
+              </Link>
+            </div>
+
+            {/* Navigation Links - Desktop */}
+            <div className="hidden md:flex items-center space-x-8">
+              <Link
+                href="/products"
+                className="text-gray-300 hover:text-white transition-colors"
+              >
+                Products
+              </Link>
+              <Link
+                href="/docs"
+                className="text-gray-300 hover:text-white transition-colors"
+              >
+                Docs
+              </Link>
+              <Link
+                href="/solutions"
+                className="text-gray-300 hover:text-white transition-colors"
+              >
+                Solutions
+              </Link>
+              <Link
+                href="/about"
+                className="text-gray-300 hover:text-white transition-colors"
+              >
+                About
+              </Link>
+              <Link
+                href="/customers"
+                className="text-gray-300 hover:text-white transition-colors"
+              >
+                Customers
+              </Link>
+              <Link
+                href="/pricing"
+                className="text-gray-300 hover:text-white transition-colors"
+              >
+                Pricing
+              </Link>
+              <Link
+                href="/contact"
+                className="text-gray-300 hover:text-white transition-colors"
+              >
+                Contact
+              </Link>
+            </div>
+
+            {/* Auth Buttons */}
+            <div className="flex items-center space-x-4">
+              <Link
+                href="/login"
+                className="bg-white text-black hover:bg-gray-200 transition-colors px-4 py-2 rounded-full font-medium"
+              >
+                Login →
+              </Link>
+
+              {/* Mobile menu button */}
+              <button
+                onClick={toggleMobileMenu}
+                className="md:hidden flex items-center"
+                aria-label="Toggle mobile menu"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-6 w-6"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M4 6h16M4 12h16m-7 6h7"
+                  />
+                </svg>
+              </button>
+            </div>
+          </div>
+        </motion.div>
+      </motion.div>
+
+      {/* Mobile Menu */}
+      <motion.div
+        className={`fixed inset-0 bg-black/90 backdrop-blur-sm z-40 md:hidden ${
+          isMobileMenuOpen ? "flex" : "hidden"
+        } flex-col items-center justify-center`}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: isMobileMenuOpen ? 1 : 0 }}
+        transition={{ duration: 0.2 }}
+      >
+        <button
+          onClick={toggleMobileMenu}
+          className="absolute top-6 right-6 p-2 text-white"
+          aria-label="Close menu"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-8 w-8"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M6 18L18 6M6 6l12 12"
+            />
+          </svg>
+        </button>
+
+        <div className="flex flex-col items-center space-y-6 text-xl">
+          <Link
+            href="/products"
+            className="text-white hover:text-blue-400 transition-colors py-2"
+            onClick={toggleMobileMenu}
+          >
+            Products
+          </Link>
+          <Link
+            href="/docs"
+            className="text-white hover:text-blue-400 transition-colors py-2"
+            onClick={toggleMobileMenu}
+          >
+            Docs
+          </Link>
+          <Link
+            href="/solutions"
+            className="text-white hover:text-blue-400 transition-colors py-2"
+            onClick={toggleMobileMenu}
+          >
+            Solutions
+          </Link>
+          <Link
+            href="/about"
+            className="text-white hover:text-blue-400 transition-colors py-2"
+            onClick={toggleMobileMenu}
+          >
+            About
+          </Link>
+          <Link
+            href="/customers"
+            className="text-white hover:text-blue-400 transition-colors py-2"
+            onClick={toggleMobileMenu}
+          >
+            Customers
+          </Link>
+          <Link
+            href="/pricing"
+            className="text-white hover:text-blue-400 transition-colors py-2"
+            onClick={toggleMobileMenu}
+          >
+            Pricing
+          </Link>
+          <Link
+            href="/contact"
+            className="text-white hover:text-blue-400 transition-colors py-2"
+            onClick={toggleMobileMenu}
+          >
+            Contact
+          </Link>
+
+          <Link
+            href="/login"
+            className="mt-4 bg-blue-600 text-white hover:bg-blue-700 transition-colors px-8 py-3 rounded-full font-medium"
+            onClick={toggleMobileMenu}
+          >
+            Login →
+          </Link>
+        </div>
+      </motion.div>
+
+      {/* Back to top button */}
+      <motion.button
+        className="fixed bottom-8 right-8 w-12 h-12 rounded-full bg-gray-900/80 backdrop-blur-md border border-gray-800 shadow-lg z-50 flex items-center justify-center text-white hover:bg-gray-800 transition-all duration-300"
+        onClick={scrollToTop}
+        initial={{ opacity: 0, y: 20 }}
+        animate={{
+          opacity: showScrollTop ? 1 : 0,
+          y: showScrollTop ? 0 : 20,
+          pointerEvents: showScrollTop ? "auto" : "none",
+        }}
+        transition={{ duration: 0.2 }}
+        whileHover={{ scale: 1.1 }}
+        whileTap={{ scale: 0.95 }}
+        aria-label="Scroll to top"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          className="h-6 w-6"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M5 15l7-7 7 7"
+          />
+        </svg>
+      </motion.button>
+
+      {/* Hero Section */}
+      <section className="relative min-h-screen flex flex-col items-center justify-center px-4 md:px-8 py-28 pt-32 bg-gradient-to-b from-black via-gray-950 to-gray-900 overflow-hidden">
+        {/* Enhanced background effects */}
+        <div className="absolute inset-0 overflow-hidden">
+          {/* Dynamic gradient orbs */}
+          <motion.div
+            className="absolute top-40 left-1/4 w-[500px] h-[500px] bg-blue-500/20 rounded-full filter blur-[120px]"
+            animate={{
+              scale: [1, 1.2, 1],
+              opacity: [0.2, 0.3, 0.2],
+              rotate: [0, 180],
+            }}
+            transition={{
+              duration: 15,
+              repeat: Infinity,
+              ease: "linear"
+            }}
+          />
+          <motion.div
+            className="absolute bottom-40 right-1/4 w-[600px] h-[600px] bg-purple-500/20 rounded-full filter blur-[130px]"
+            animate={{
+              scale: [1.2, 1, 1.2],
+              opacity: [0.2, 0.3, 0.2],
+              rotate: [180, 0],
+            }}
+            transition={{
+              duration: 18,
+              repeat: Infinity,
+              ease: "linear"
+            }}
+          />
+          
+          {/* Grid pattern overlay */}
+          <div 
+            className="absolute inset-0" 
+            style={{
+              backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(255,255,255,0.05) 1px, transparent 0)',
+              backgroundSize: '40px 40px'
+            }}
+          />
+
+          {/* Enhanced particle system */}
+          {Array.from({ length: 30 }).map((_, i) => {
+            const left = ((i * 23) % 100).toFixed(2);
+            const top = ((i * 29) % 100).toFixed(2);
+            const size = (i % 3) + 1; // Vary particle sizes
+            
+            return (
+              <motion.div
+                key={i}
+                className={`absolute rounded-full bg-gradient-to-r from-blue-400 to-blue-500`}
+                style={{
+                  left: `${left}%`,
+                  top: `${top}%`,
+                  width: `${size}px`,
+                  height: `${size}px`,
+                  filter: 'blur(0.5px)',
+                }}
+                animate={{
+                  y: [0, -50, 0],
+                  x: [0, i % 2 === 0 ? 20 : -20, 0],
+                  opacity: [0, 0.8, 0],
+                  scale: [0, 1.2, 0],
+                }}
+                transition={{
+                  duration: 3 + (i % 4),
+                  repeat: Infinity,
+                  delay: i * 0.2,
+                  ease: "easeInOut"
+                }}
+              />
+            );
+          })}
+        </div>
+
+        <motion.div
+          className="container mx-auto max-w-5xl z-10 text-center"
+          initial="hidden"
+          animate="visible"
+          variants={staggerContainer}
+        >
+          {/* Enhanced heading animations */}
+          <motion.div
+            className="text-5xl md:text-7xl font-bold mb-6 mt-16 relative"
+            variants={fadeIn}
+          >
+            <motion.div
+              className="mb-4 relative inline-block"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.2 }}
+            >
+              Fix Your{" "}
+              <motion.span
+                className="text-blue-500 relative inline-block"
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.8, delay: 0.4 }}
+              >
+                Weaknesses
+                <motion.div
+                  className="absolute -inset-1 bg-blue-500/20 rounded-lg blur-lg"
+                  animate={{
+                    opacity: [0.5, 1, 0.5],
+                    scale: [1, 1.05, 1],
+                  }}
+                  transition={{ duration: 2, repeat: Infinity }}
+                />
+              </motion.span>
+            </motion.div>
+
+            <motion.div
+              className="mb-4 relative inline-block"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.6 }}
+            >
+              Know{" "}
+              <motion.span
+                className="text-blue-500 relative inline-block"
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.8, delay: 0.8 }}
+              >
+                Strengths
+                <motion.div
+                  className="absolute -inset-1 bg-blue-500/20 rounded-lg blur-lg"
+                  animate={{
+                    opacity: [0.5, 1, 0.5],
+                    scale: [1, 1.05, 1],
+                  }}
+                  transition={{ duration: 2, repeat: Infinity, delay: 0.5 }}
+                />
+              </motion.span>
+            </motion.div>
+
+            <motion.div
+              className="relative inline-block"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 1 }}
+            >
+              Train{" "}
+              <motion.span
+                className="text-blue-500 relative inline-block"
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.8, delay: 1.2 }}
+              >
+                Smarter
+                <motion.div
+                  className="absolute -inset-1 bg-blue-500/20 rounded-lg blur-lg"
+                  animate={{
+                    opacity: [0.5, 1, 0.5],
+                    scale: [1, 1.05, 1],
+                  }}
+                  transition={{ duration: 2, repeat: Infinity, delay: 1 }}
+                />
+              </motion.span>
+            </motion.div>
+          </motion.div>
+
+          {/* Enhanced subtitle */}
+          <motion.p
+            className="text-xl md:text-2xl text-gray-300 max-w-3xl mx-auto mb-10 leading-relaxed"
+            variants={fadeIn}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 1.4 }}
+          >
+            Upload a photo, get instant muscle analysis, with exercise
+            recommendations on weak muscles and improve faster.
+            <motion.span
+              className="block mt-4 text-blue-400/80"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 1.8 }}
+            >
+              Powered by advanced AI technology
+            </motion.span>
+          </motion.p>
+
+          {/* Enhanced CTA buttons */}
+          <motion.div
+            className="flex flex-col sm:flex-row items-center justify-center gap-6 mb-16"
+            variants={fadeIn}
+          >
+            <motion.button
+              variants={buttonHover}
+              initial="rest"
+              whileHover="hover"
+              onClick={() => router.push("/main")}
+              className="px-8 py-4 text-lg font-semibold rounded-md bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-blue-500/25"
+            >
+              <motion.span
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 1.6 }}
+                className="flex items-center gap-2"
+              >
+                GET STARTED
+                <motion.svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-5 w-5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  animate={{ x: [0, 5, 0] }}
+                  transition={{ duration: 1.5, repeat: Infinity }}
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                </motion.svg>
+              </motion.span>
+            </motion.button>
+
+            <motion.button
+              variants={buttonHover}
+              initial="rest"
+              whileHover="hover"
+              className="px-8 py-4 text-lg font-semibold rounded-md border border-gray-700 hover:bg-gray-800/50 transition-all duration-300 transform hover:scale-105 group"
+            >
+              <motion.span
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 1.8 }}
+                className="flex items-center gap-2"
+              >
+                EXPLORE DEMO
+                <motion.div
+                  className="w-5 h-5 rounded-full bg-blue-500/30 group-hover:bg-blue-500/50 transition-colors"
+                  animate={{ scale: [1, 1.2, 1] }}
+                  transition={{ duration: 2, repeat: Infinity }}
+                />
+              </motion.span>
+            </motion.button>
+          </motion.div>
+
+          {/* Enhanced preview image */}
+          <motion.div
+            className="relative w-full h-[500px] rounded-xl overflow-hidden shadow-2xl border border-gray-800/50 group"
+            variants={fadeIn}
+            whileHover={{ y: -5 }}
+            transition={{ duration: 0.3 }}
+          >
+            <motion.div
+              className="absolute inset-0 bg-gradient-to-b from-transparent via-black/20 to-black/40 z-10 group-hover:opacity-75 transition-opacity duration-300"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 2 }}
+            />
+            
+            <motion.div
+              className="absolute inset-0 bg-gradient-to-r from-blue-500/10 via-transparent to-purple-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-20"
+              animate={{
+                backgroundPosition: ['100% 0%', '0% 100%'],
+              }}
+              transition={{
+                duration: 3,
+                repeat: Infinity,
+                repeatType: 'reverse',
+              }}
+            />
+
+            <Image
+              src="/app-preview.jpg"
+              alt="Muscle AI App Preview"
+              fill
+              className="object-cover transform group-hover:scale-105 transition-transform duration-500"
+              onError={(e) => {
+                if (!e.currentTarget.dataset.errorHandled) {
+                  e.currentTarget.dataset.errorHandled = "true";
+                  e.currentTarget.src = "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTIwMCIgaGVpZ2h0PSI2MDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjEyMDAiIGhlaWdodD0iNjAwIiBmaWxsPSIjMTIxODI2Ii8+PHRleHQgeD0iNjAwIiB5PSIzMDAiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIzNiIgZmlsbD0iIzY2NiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgYWxpZ25tZW50LWJhc2VsaW5lPSJtaWRkbGUiPk11c2NsZSBBSSBBcHAgUHJldmlldzwvdGV4dD48L3N2Zz4=";
+                }
+              }}
+            />
+
+            {/* Interactive hotspots */}
+            {[
+              { top: '20%', left: '20%', label: 'Muscle Detection' },
+              { top: '40%', left: '80%', label: 'Strength Analysis' },
+              { top: '70%', left: '30%', label: 'Progress Tracking' },
+            ].map((hotspot, index) => (
+              <motion.div
+                key={index}
+                className="absolute z-30"
+                style={{ top: hotspot.top, left: hotspot.left }}
+                initial={{ opacity: 0, scale: 0 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 2.2 + index * 0.2 }}
+              >
+                <motion.div
+                  className="w-3 h-3 bg-blue-500 rounded-full relative cursor-pointer group"
+                  animate={{
+                    scale: [1, 1.2, 1],
+                    boxShadow: [
+                      '0 0 0 0 rgba(59, 130, 246, 0.4)',
+                      '0 0 0 10px rgba(59, 130, 246, 0)',
+                      '0 0 0 0 rgba(59, 130, 246, 0.4)',
+                    ],
+                  }}
+                  transition={{ duration: 2, repeat: Infinity }}
+                >
+                  <motion.div
+                    className="absolute left-full ml-2 top-1/2 -translate-y-1/2 bg-gray-900/90 backdrop-blur-sm px-3 py-1 rounded-lg text-sm whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                  >
+                    {hotspot.label}
+                  </motion.div>
+                </motion.div>
+              </motion.div>
+            ))}
+          </motion.div>
+        </motion.div>
+      </section>
+      
+      {/* Add the rest of your sections here */}
+      
+    </div>
+  );
+}
