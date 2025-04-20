@@ -82,37 +82,48 @@ export async function POST(request: Request) {
 
     console.log("Created subscription:", subscription);
 
-    // 3. Record the transaction
-    const transactionData = {
-      user_id: userId,
-      plan_id: planData.id,
-      razorpay_payment_id: razorpayPaymentId,
-      amount: amount,
-      currency: "INR",
-      status: "success",
-      payment_date: new Date().toISOString(),
-    };
+    // 3. Record the transaction with proper error handling
+    let transaction = null;
+    let transactionError = null;
 
-    console.log("Attempting to record transaction:", transactionData);
+    try {
+      const transactionData = {
+        user_id: userId,
+        plan_id: planData.id,
+        razorpay_payment_id: razorpayPaymentId,
+        amount: amount,
+        currency: "INR",
+        status: "success",
+        payment_date: new Date().toISOString(),
+      };
 
-    const { data: transaction, error: transactionError } = await supabaseAdmin
-      .from("subscription_transactions")
-      .insert([transactionData])
-      .select()
-      .single();
+      console.log("Attempting to record transaction:", transactionData);
 
-    if (transactionError) {
-      console.error("Error recording transaction:", transactionError);
-      // Don't return error here, as subscription is already created
-      // But log it for debugging
-    } else {
-      console.log("Transaction recorded successfully:", transaction);
+      const result = await supabaseAdmin
+        .from("subscription_transactions")
+        .insert([transactionData])
+        .select()
+        .single();
+
+      transaction = result.data;
+      transactionError = result.error;
+
+      if (transactionError) {
+        console.error("Error recording transaction:", transactionError);
+        // We'll continue even if transaction recording fails
+      } else {
+        console.log("Transaction recorded successfully:", transaction);
+      }
+    } catch (error) {
+      console.error("Exception recording transaction:", error);
+      // We'll continue even if transaction recording throws an exception
     }
 
     return NextResponse.json({
       success: true,
       subscription,
       transaction,
+      transactionError: transactionError ? transactionError.message : null,
     });
   } catch (error) {
     console.error("Error processing payment success:", error);

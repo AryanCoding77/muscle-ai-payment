@@ -31,7 +31,7 @@ export async function GET(req: NextRequest) {
         start_date,
         end_date,
         status,
-        subscription_plans (
+        subscription_plans!plan_id (
           id,
           name,
           description,

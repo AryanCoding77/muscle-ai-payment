@@ -30,8 +30,8 @@ export async function GET(req: NextRequest) {
         currency,
         status,
         payment_date,
-        metadata,
-        subscription_plans (
+        created_at,
+        subscription_plans:plan_id (
           id,
           name,
           description,
@@ -45,7 +45,7 @@ export async function GET(req: NextRequest) {
     if (error) {
       console.error("Error fetching transaction history:", error);
       return NextResponse.json(
-        { error: "Failed to fetch transaction history" },
+        { error: "Failed to fetch transaction history", details: error.message },
         { status: 500 }
       );
     }
@@ -55,11 +55,11 @@ export async function GET(req: NextRequest) {
       success: true,
       transactions: transactions || [],
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error("Unexpected error:", error);
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: "Internal server error", details: error.message },
       { status: 500 }
     );
   }
-}
+} 

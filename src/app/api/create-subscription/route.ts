@@ -158,7 +158,7 @@ export async function POST(req: NextRequest) {
       .from("user_subscriptions")
       .insert({
         user_id: userId,
-        plan_id: planData.id, // Changed from subscription_id to plan_id
+        plan_id: planData.id,
         start_date: startDate.toISOString(),
         end_date: endDate.toISOString(),
         status: "active",
@@ -174,50 +174,42 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Get transaction table structure
-    const { data: transactionStructure, error: structureError } =
-      await supabaseAdmin
-        .from("subscription_transactions")
-        .select("*")
-        .limit(1);
+    // Record payment transaction if payment ID was provided
+    let transaction = null;
+    let transactionError = null;
 
-    if (structureError) {
-      console.error(
-        "Error getting transaction table structure:",
-        structureError
-      );
-    } else {
-      console.log(
-        "Transaction table columns:",
-        transactionStructure
-          ? Object.keys(transactionStructure[0] || {})
-          : "No transaction records found"
-      );
-    }
-
-    // Record the payment transaction if a payment ID was provided - using admin client to bypass RLS
     if (paymentId) {
       try {
-        const { data: transactionData, error: transactionError } =
-          await supabaseAdmin.from("subscription_transactions").insert({
-            user_id: userId,
-            plan_id: planData.id,
-            razorpay_payment_id: paymentId,
-            amount: amount,
-            currency: currency || "INR",
-            status: "success",
-            payment_date: new Date().toISOString(),
-            // Removed metadata field
-          });
+        const transactionData = {
+          user_id: userId,
+          plan_id: planData.id,
+          razorpay_payment_id: paymentId,
+          amount: amount,
+          currency: currency || "INR",
+          status: "success",
+          payment_date: new Date().toISOString(),
+        };
+
+        console.log("Attempting to record transaction:", transactionData);
+
+        const result = await supabaseAdmin
+          .from("subscription_transactions")
+          .insert(transactionData)
+          .select()
+          .single();
+
+        transaction = result.data;
+        transactionError = result.error;
 
         if (transactionError) {
           console.error("Error recording transaction:", transactionError);
-          // We continue even if transaction recording fails since the subscription was created
+          // We continue even if transaction recording fails
         } else {
-          console.log("Transaction saved successfully:", transactionData);
+          console.log("Transaction recorded successfully:", transaction);
         }
-      } catch (txError) {
-        console.error("Exception recording transaction:", txError);
+      } catch (error) {
+        console.error("Exception recording transaction:", error);
+        // We continue even if transaction recording throws an exception
       }
     }
 
@@ -232,6 +224,8 @@ export async function POST(req: NextRequest) {
         endDate: endDate,
         status: "active",
       },
+      transaction,
+      transactionError: transactionError ? transactionError.message : null,
     });
   } catch (error) {
     console.error("Unexpected error:", error);
