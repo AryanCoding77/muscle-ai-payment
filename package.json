@@ -15,8 +15,10 @@
     "@supabase/supabase-js": "^2.49.4",
     "framer-motion": "^12.6.0",
     "next": "15.2.3",
+    "razorpay": "^2.9.6",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "react-hot-toast": "^2.5.2",
     "recharts": "^2.15.1",
     "together-ai": "^0.13.0"
   },

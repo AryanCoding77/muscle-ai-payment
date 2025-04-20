@@ -13,6 +13,8 @@ import { useRouter } from "next/navigation";
 import ProtectedRoute from "../../components/ProtectedRoute";
 import Link from "next/link";
 import { useUser } from "@/context/UserContext";
+import PricingPlans from "@/components/PricingPlans";
+import toast from "react-hot-toast";
 
 export default function Home() {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
@@ -57,14 +59,20 @@ export default function Home() {
   };
 
   const analyzeImage = async () => {
-    if (!fileInputRef.current?.files?.[0]) {
-      setError("Please select an image first");
+    if (!selectedImage) return;
+
+    // Check if user has an active subscription
+    if (!userInfo.subscription || userInfo.subscription.status !== "active") {
+      toast.error(
+        "You need an active subscription to analyze images. Please purchase a plan."
+      );
       return;
     }
 
-    // Check if an analysis is already in progress
-    if (isAnalyzing) {
-      setError("An analysis is already in progress. Please wait.");
+    setIsAnalyzing(true);
+
+    if (!fileInputRef.current?.files?.[0]) {
+      setError("Please select an image first");
       return;
     }
 
@@ -788,49 +796,26 @@ export default function Home() {
           </div>
 
           {/* User Icon and Dropdown */}
-          <div className="relative">
-            <button
-              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-              className="flex items-center justify-center w-10 h-10 rounded-full bg-blue-500 hover:bg-blue-600 transition-colors"
-            >
-              {userInfo?.picture ? (
-                <img
-                  src={userInfo.picture}
-                  alt="User"
-                  className="w-10 h-10 rounded-full"
-                />
-              ) : (
-                <svg
-                  className="w-6 h-6 text-white"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                  />
-                </svg>
-              )}
-            </button>
+          <div className="flex items-center space-x-3">
+            {/* Pricing Plans Button - only shown when user has no active subscription */}
+            {(!userInfo.subscription ||
+              userInfo.subscription.status !== "active") && <PricingPlans />}
 
-            {/* Dropdown Menu */}
-            {isDropdownOpen && (
-              <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
-                <div className="px-4 py-2 border-b border-gray-200">
-                  <p className="text-sm font-medium text-gray-900">
-                    {userInfo?.name || userInfo?.email}
-                  </p>
-                  <p className="text-xs text-gray-500">{userInfo?.email}</p>
-                </div>
-                <button
-                  onClick={() => router.push("/profile")}
-                  className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors flex items-center space-x-2"
-                >
+            {/* User Profile Button */}
+            <div className="relative">
+              <button
+                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                className="flex items-center justify-center w-10 h-10 rounded-full bg-blue-500 hover:bg-blue-600 transition-colors"
+              >
+                {userInfo?.picture ? (
+                  <img
+                    src={userInfo.picture}
+                    alt="User"
+                    className="w-10 h-10 rounded-full"
+                  />
+                ) : (
                   <svg
-                    className="w-4 h-4"
+                    className="w-6 h-6 text-white"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -842,29 +827,78 @@ export default function Home() {
                       d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
                     />
                   </svg>
-                  <span>Profile</span>
-                </button>
-                <button
-                  onClick={handleLogout}
-                  className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-50 transition-colors flex items-center space-x-2"
-                >
-                  <svg
-                    className="w-4 h-4"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
+                )}
+              </button>
+
+              {/* Dropdown Menu */}
+              {isDropdownOpen && (
+                <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
+                  <div className="px-4 py-2 border-b border-gray-200">
+                    <p className="text-sm font-medium text-gray-900">
+                      {userInfo?.name || userInfo?.email}
+                    </p>
+                    <p className="text-xs text-gray-500">{userInfo?.email}</p>
+                  </div>
+                  <button
+                    onClick={() => router.push("/profile")}
+                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors flex items-center space-x-2"
                   >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
-                    />
-                  </svg>
-                  <span>Logout</span>
-                </button>
-              </div>
-            )}
+                    <svg
+                      className="w-4 h-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                      />
+                    </svg>
+                    <span>Profile</span>
+                  </button>
+                  <button
+                    onClick={() => router.push("/my-plan")}
+                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors flex items-center space-x-2"
+                  >
+                    <svg
+                      className="w-4 h-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                      />
+                    </svg>
+                    <span>View My Plan</span>
+                  </button>
+                  <button
+                    onClick={() => logout({ returnTo: window.location.origin })}
+                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors flex items-center space-x-2"
+                  >
+                    <svg
+                      className="w-4 h-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+                      />
+                    </svg>
+                    <span>Logout</span>
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </header>
 
