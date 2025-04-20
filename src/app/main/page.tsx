@@ -15,6 +15,7 @@ import Link from "next/link";
 import { useUser } from "@/context/UserContext";
 import PricingPlans from "@/components/PricingPlans";
 import toast from "react-hot-toast";
+import SubscriptionRequired from '@/components/SubscriptionRequired';
 
 export default function Home() {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
@@ -31,6 +32,7 @@ export default function Home() {
   const { logout } = useAuth0();
   const { userInfo } = useUser();
   const router = useRouter();
+  const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -61,11 +63,17 @@ export default function Home() {
   const analyzeImage = async () => {
     if (!selectedImage) return;
 
-    // Check if user has an active subscription
+    // Check if user is logged in
+    if (!userInfo?.id) {
+      toast.error("Please log in to use this feature");
+      router.push("/login");
+      return;
+    }
+
+    // Check if user has an active subscription directly
     if (!userInfo.subscription || userInfo.subscription.status !== "active") {
-      toast.error(
-        "You need an active subscription to analyze images. Please purchase a plan."
-      );
+      // Show subscription modal instead of redirecting
+      setShowSubscriptionModal(true);
       return;
     }
 
@@ -80,8 +88,7 @@ export default function Home() {
     const now = Date.now();
     const timeSinceLastAnalysis = now - lastAnalysisTime.current;
     if (timeSinceLastAnalysis < 1000) {
-      // 1 second cooldown instead of 3
-      // 3 seconds cooldown
+      // 1 second cooldown
       setError(
         `Please wait ${Math.ceil(
           (1000 - timeSinceLastAnalysis) / 1000
@@ -98,6 +105,10 @@ export default function Home() {
 
       const formData = new FormData();
       formData.append("image", fileInputRef.current.files[0]);
+      // Send the user ID to allow the API to check subscription status
+      if (userInfo.id) {
+        formData.append("userId", userInfo.id);
+      }
 
       const response = await fetch("/api/analyze", {
         method: "POST",
@@ -116,6 +127,10 @@ export default function Home() {
         } else if (data.isImageQuality) {
           // Handle image quality issues
           throw new Error(data.error);
+        } else if (response.status === 403 && data.requiresSubscription) {
+          // Handle subscription required error - show modal instead of toast
+          setShowSubscriptionModal(true);
+          return;
         } else {
           throw new Error(data.error || "Failed to analyze image");
         }
@@ -1683,6 +1698,11 @@ export default function Home() {
           </div>
         </div>
       </footer>
+
+      {/* Subscription Required Modal */}
+      {showSubscriptionModal && (
+        <SubscriptionRequired onClose={() => setShowSubscriptionModal(false)} />
+      )}
     </ProtectedRoute>
   );
 }

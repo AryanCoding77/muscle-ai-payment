@@ -5,9 +5,11 @@ import {
   getCachedAnalysis,
   setCachedAnalysis,
 } from "../../../utils/cache";
+import { supabaseAdmin } from "@/utils/supabase-admin";
 
 // Initialize Together client with your API key
-const together = new Together(process.env.TOGETHER_API_KEY || "");
+const apiKey = process.env.TOGETHER_API_KEY || "";
+const together = new Together({ apiKey });
 
 // Add a simple rate limiter
 const RATE_LIMIT_WINDOW = 30000; // 30 seconds in milliseconds
@@ -21,8 +23,63 @@ const RETRY_DELAY = 1000; // 1 second
 // Cache configuration
 const CACHE_EXPIRY = 60 * 60 * 24 * 7; // 7 days in seconds
 
+// Function to check if user has an active subscription
+async function hasActiveSubscription(userId: string): Promise<boolean> {
+  try {
+    if (!userId) return false;
+    
+    const { data, error } = await supabaseAdmin
+      .from("user_subscriptions")
+      .select("id, status")
+      .eq("user_id", userId)
+      .eq("status", "active")
+      .lte("start_date", new Date().toISOString())
+      .gte("end_date", new Date().toISOString())
+      .limit(1);
+    
+    if (error) {
+      console.error("Error checking subscription:", error);
+      return false;
+    }
+    
+    return data && data.length > 0;
+  } catch (error) {
+    console.error("Exception checking subscription:", error);
+    return false;
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
+    // Get the user ID from the request
+    const formData = await request.formData();
+    const userId = formData.get("userId") as string;
+    
+    // Check if the user has an active subscription
+    if (userId) {
+      const isSubscribed = await hasActiveSubscription(userId);
+      
+      if (!isSubscribed) {
+        return NextResponse.json(
+          { 
+            error: "Subscription required", 
+            message: "You need an active subscription to analyze images. Please purchase a plan.",
+            requiresSubscription: true 
+          },
+          { status: 403 }
+        );
+      }
+    } else {
+      return NextResponse.json(
+        { 
+          error: "User ID required", 
+          message: "Please log in to use this feature.",
+          requiresLogin: true 
+        },
+        { status: 401 }
+      );
+    }
+    
     // Implement basic rate limiting
     const now = Date.now();
     while (
@@ -45,7 +102,6 @@ export async function POST(request: NextRequest) {
     requestTimestamps.push(now);
 
     // Get the image data from the request
-    const formData = await request.formData();
     const imageFile = formData.get("image") as File;
 
     if (!imageFile) {
