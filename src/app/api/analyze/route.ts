@@ -8,8 +8,7 @@ import {
 import { supabaseAdmin } from "@/utils/supabase-admin";
 
 // Initialize Together client with your API key
-const apiKey = process.env.TOGETHER_API_KEY || "";
-const together = new Together({ apiKey });
+const together = new Together(process.env.TOGETHER_API_KEY || "");
 
 // Add a simple rate limiter
 const RATE_LIMIT_WINDOW = 30000; // 30 seconds in milliseconds
@@ -23,63 +22,45 @@ const RETRY_DELAY = 1000; // 1 second
 // Cache configuration
 const CACHE_EXPIRY = 60 * 60 * 24 * 7; // 7 days in seconds
 
-// Function to check if user has an active subscription
-async function hasActiveSubscription(userId: string): Promise<boolean> {
-  try {
-    if (!userId) return false;
-    
-    const { data, error } = await supabaseAdmin
-      .from("user_subscriptions")
-      .select("id, status")
-      .eq("user_id", userId)
-      .eq("status", "active")
-      .lte("start_date", new Date().toISOString())
-      .gte("end_date", new Date().toISOString())
-      .limit(1);
-    
-    if (error) {
-      console.error("Error checking subscription:", error);
-      return false;
-    }
-    
-    return data && data.length > 0;
-  } catch (error) {
-    console.error("Exception checking subscription:", error);
-    return false;
-  }
-}
-
 export async function POST(request: NextRequest) {
   try {
-    // Get the user ID from the request
-    const formData = await request.formData();
-    const userId = formData.get("userId") as string;
+    // Get the user ID from the request headers
+    const userId = request.headers.get("x-user-id");
     
-    // Check if the user has an active subscription
+    // If userId is provided, check quota before processing
     if (userId) {
-      const isSubscribed = await hasActiveSubscription(userId);
-      
-      if (!isSubscribed) {
-        return NextResponse.json(
-          { 
-            error: "Subscription required", 
-            message: "You need an active subscription to analyze images. Please purchase a plan.",
-            requiresSubscription: true 
+      try {
+        // Check user's quota
+        const baseUrl = new URL(request.url).origin;
+        const quotaResponse = await fetch(`${baseUrl}/api/check-quota`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
           },
-          { status: 403 }
-        );
+          body: JSON.stringify({ userId }),
+        });
+        
+        const quotaData = await quotaResponse.json();
+        
+        // If quota check failed, return the error
+        if (!quotaResponse.ok || !quotaData.success) {
+          return NextResponse.json(
+            { 
+              error: quotaData.message || "Quota exceeded", 
+              requiresUpgrade: quotaData.requiresUpgrade || false,
+              quota: quotaData.quota || { used: 0, limit: 0, remaining: 0 }
+            },
+            { status: 403 }
+          );
+        }
+        
+        console.log("Quota check passed:", quotaData);
+      } catch (quotaError) {
+        console.error("Error checking quota:", quotaError);
+        // Continue with analysis if quota check fails (fallback behavior)
       }
-    } else {
-      return NextResponse.json(
-        { 
-          error: "User ID required", 
-          message: "Please log in to use this feature.",
-          requiresLogin: true 
-        },
-        { status: 401 }
-      );
     }
-    
+  
     // Implement basic rate limiting
     const now = Date.now();
     while (
@@ -102,6 +83,7 @@ export async function POST(request: NextRequest) {
     requestTimestamps.push(now);
 
     // Get the image data from the request
+    const formData = await request.formData();
     const imageFile = formData.get("image") as File;
 
     if (!imageFile) {
@@ -122,9 +104,40 @@ export async function POST(request: NextRequest) {
     const cachedResult = await getCachedAnalysis(imageHash);
     if (cachedResult) {
       console.log("Cache hit! Returning cached analysis");
+      
+      // Get quota info if user ID was provided
+      let quotaInfo = null;
+      if (userId) {
+        try {
+          // Get quota info without incrementing (just for display)
+          const { data: subscription } = await supabaseAdmin
+            .from("user_subscriptions")
+            .select("quota_used, monthly_quota, last_quota_reset")
+            .eq("user_id", userId)
+            .eq("status", "active")
+            .single();
+            
+          if (subscription) {
+            const resetDate = new Date(subscription.last_quota_reset);
+            resetDate.setDate(resetDate.getDate() + 30); // 30 days from last reset
+            
+            quotaInfo = {
+              used: subscription.quota_used,
+              limit: subscription.monthly_quota,
+              remaining: Math.max(0, subscription.monthly_quota - subscription.quota_used),
+              resetDate: resetDate.toISOString()
+            };
+          }
+        } catch (quotaError) {
+          console.error("Error getting quota info:", quotaError);
+          // Continue without quota info
+        }
+      }
+      
       return NextResponse.json({
         analysis: cachedResult,
         cached: true,
+        quota: quotaInfo
       });
     }
 
@@ -544,10 +557,39 @@ Muscles not visible in this image:
             }
           } else {
             // Success! Return the processed analysis
+            let quotaInfo = null;
+            if (userId) {
+              try {
+                // Get quota info without incrementing (just for display)
+                const { data: subscription } = await supabaseAdmin
+                  .from("user_subscriptions")
+                  .select("quota_used, monthly_quota, last_quota_reset")
+                  .eq("user_id", userId)
+                  .eq("status", "active")
+                  .single();
+                
+                if (subscription) {
+                  const resetDate = new Date(subscription.last_quota_reset);
+                  resetDate.setDate(resetDate.getDate() + 30); // 30 days from last reset
+                  
+                  quotaInfo = {
+                    used: subscription.quota_used,
+                    limit: subscription.monthly_quota,
+                    remaining: Math.max(0, subscription.monthly_quota - subscription.quota_used),
+                    resetDate: resetDate.toISOString()
+                  };
+                }
+              } catch (quotaError) {
+                console.error("Error getting quota info:", quotaError);
+                // Continue without quota info
+              }
+            }
+            
             return NextResponse.json({
               analysis: processedContent,
               cached: false,
               modelUsed: modelToUse,
+              quota: quotaInfo
             });
           }
         } else {

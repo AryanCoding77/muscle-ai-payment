@@ -67,6 +67,8 @@ export default function RazorpayPayment({
           planName,
           amount,
           razorpayPaymentId: response.razorpay_payment_id,
+          razorpayOrderId: response.razorpay_order_id,
+          razorpaySignature: response.razorpay_signature,
           startDate: today.toISOString(),
           endDate: endDate.toISOString(),
         }),
@@ -133,6 +135,17 @@ export default function RazorpayPayment({
     try {
       setIsProcessing(true);
 
+      // First, ensure subscription plans exist
+      try {
+        console.log("Checking subscription plans...");
+        const plansResponse = await fetch("/api/check-subscription-plans");
+        const plansData = await plansResponse.json();
+        console.log("Subscription plans check result:", plansData);
+      } catch (error) {
+        console.error("Error checking subscription plans:", error);
+        // Continue anyway as this is just a precaution
+      }
+
       // Fetch Razorpay key
       const keyResponse = await fetch("/api/get-razorpay-key");
       if (!keyResponse.ok) {
@@ -149,6 +162,7 @@ export default function RazorpayPayment({
         body: JSON.stringify({
           amount,
           planName,
+          userId: user?.sub, // Add user ID for later verification
         }),
       });
 
@@ -160,11 +174,11 @@ export default function RazorpayPayment({
 
       // Initialize Razorpay payment
       const options = {
-        key: keyData.key || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+        key: keyData.key,
         amount: data.amount,
         currency: data.currency,
         name: "MuscleAI",
-        description: `${planName} Plan Subscription`,
+        description: `${planName} Plan - One-time Payment`,
         order_id: data.orderId,
         prefill: {
           name: userInfo?.name || "",

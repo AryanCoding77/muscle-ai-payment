@@ -15,7 +15,7 @@ import Link from "next/link";
 import { useUser } from "@/context/UserContext";
 import PricingPlans from "@/components/PricingPlans";
 import toast from "react-hot-toast";
-import SubscriptionRequired from '@/components/SubscriptionRequired';
+import QuotaDisplay from "@/components/QuotaDisplay";
 
 export default function Home() {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
@@ -29,10 +29,9 @@ export default function Home() {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const lastAnalysisTime = useRef<number>(0);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const { logout } = useAuth0();
+  const { logout, user } = useAuth0();
   const { userInfo } = useUser();
   const router = useRouter();
-  const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -63,17 +62,11 @@ export default function Home() {
   const analyzeImage = async () => {
     if (!selectedImage) return;
 
-    // Check if user is logged in
-    if (!userInfo?.id) {
-      toast.error("Please log in to use this feature");
-      router.push("/login");
-      return;
-    }
-
-    // Check if user has an active subscription directly
+    // Check if user has an active subscription
     if (!userInfo.subscription || userInfo.subscription.status !== "active") {
-      // Show subscription modal instead of redirecting
-      setShowSubscriptionModal(true);
+      toast.error(
+        "You need an active subscription to analyze images. Please purchase a plan."
+      );
       return;
     }
 
@@ -88,7 +81,8 @@ export default function Home() {
     const now = Date.now();
     const timeSinceLastAnalysis = now - lastAnalysisTime.current;
     if (timeSinceLastAnalysis < 1000) {
-      // 1 second cooldown
+      // 1 second cooldown instead of 3
+      // 3 seconds cooldown
       setError(
         `Please wait ${Math.ceil(
           (1000 - timeSinceLastAnalysis) / 1000
@@ -105,13 +99,13 @@ export default function Home() {
 
       const formData = new FormData();
       formData.append("image", fileInputRef.current.files[0]);
-      // Send the user ID to allow the API to check subscription status
-      if (userInfo.id) {
-        formData.append("userId", userInfo.id);
-      }
+
+      // Get the current user's ID for quota tracking
+      const userId = user?.sub;
 
       const response = await fetch("/api/analyze", {
         method: "POST",
+        headers: userId ? { "x-user-id": userId } : {},
         body: formData,
       });
 
@@ -124,13 +118,18 @@ export default function Home() {
             data.error ||
               "Too many requests. Please wait a moment before trying again."
           );
+        } else if (response.status === 403 && data.quota) {
+          // Handle quota exceeded
+          const resetDate = data.quota.resetDate 
+            ? new Date(data.quota.resetDate).toLocaleDateString() 
+            : 'next month';
+            
+          throw new Error(
+            `${data.error || "Monthly quota exceeded"}. You've used ${data.quota.used} of ${data.quota.limit} analyses. Your quota will reset on ${resetDate}.`
+          );
         } else if (data.isImageQuality) {
           // Handle image quality issues
           throw new Error(data.error);
-        } else if (response.status === 403 && data.requiresSubscription) {
-          // Handle subscription required error - show modal instead of toast
-          setShowSubscriptionModal(true);
-          return;
         } else {
           throw new Error(data.error || "Failed to analyze image");
         }
@@ -148,6 +147,11 @@ export default function Home() {
 
       if (data.modelUsed) {
         console.log(`Analysis generated using model: ${data.modelUsed}`);
+      }
+      
+      // Display quota information if available
+      if (data.quota) {
+        toast.success(`Analyses remaining this month: ${data.quota.remaining}/${data.quota.limit}`);
       }
 
       // Check if response has standard format we expect
@@ -811,16 +815,19 @@ export default function Home() {
           </div>
 
           {/* User Icon and Dropdown */}
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center space-x-6">
+            {userInfo.subscription && (
+              <QuotaDisplay compact />
+            )}
+            
             {/* Pricing Plans Button - only shown when user has no active subscription */}
             {(!userInfo.subscription ||
               userInfo.subscription.status !== "active") && <PricingPlans />}
-
-            {/* User Profile Button */}
+            
             <div className="relative">
               <button
                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                className="flex items-center justify-center w-10 h-10 rounded-full bg-blue-500 hover:bg-blue-600 transition-colors"
+                className="flex items-center space-x-2 focus:outline-none p-1 rounded-full hover:bg-gray-100"
               >
                 {userInfo?.picture ? (
                   <img
@@ -1698,11 +1705,6 @@ export default function Home() {
           </div>
         </div>
       </footer>
-
-      {/* Subscription Required Modal */}
-      {showSubscriptionModal && (
-        <SubscriptionRequired onClose={() => setShowSubscriptionModal(false)} />
-      )}
     </ProtectedRoute>
   );
 }

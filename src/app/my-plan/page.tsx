@@ -4,6 +4,7 @@ import React, { useEffect } from "react";
 import { useUser } from "@/context/UserContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import Link from "next/link";
+import QuotaDisplay from "@/components/QuotaDisplay";
 
 export default function MyPlanPage() {
   const { userInfo, fetchUserSubscription, isLoading } = useUser();

@@ -44,7 +44,7 @@ const plans = [
     duration_days: 30,
     features: [
       "Premium Muscle Analysis",
-      "Unlimited Analyses",
+      "100 Analyses per Month",
       "24/7 Premium Support",
       "Mobile App Access",
       "Personalized Workout Plans",

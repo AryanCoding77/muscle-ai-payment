@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import Razorpay from "razorpay";
+import { supabaseAdmin } from "@/utils/supabase-admin";
 
 // Initialize Razorpay
 const razorpay = new Razorpay({
@@ -10,7 +11,14 @@ const razorpay = new Razorpay({
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { amount, planName } = body;
+    const { amount, planName, userId } = body;
+
+    if (!amount || !planName || !userId) {
+      return NextResponse.json(
+        { error: "Missing required fields" },
+        { status: 400 }
+      );
+    }
 
     // Create order
     const order = await razorpay.orders.create({
@@ -18,8 +26,31 @@ export async function POST(request: Request) {
       currency: "INR",
       notes: {
         planName: planName,
+        userId: userId,
       },
     });
+
+    // Store order information in the database
+    const { data: orderData, error: orderError } = await supabaseAdmin
+      .from("razorpay_orders")
+      .insert([
+        {
+          order_id: order.id,
+          user_id: userId,
+          plan_name: planName,
+          amount: amount,
+          currency: order.currency,
+        },
+      ])
+      .select()
+      .single();
+
+    if (orderError) {
+      console.error("Error storing order information:", orderError);
+      // Continue despite database error to not block the payment flow
+    } else {
+      console.log("Order information stored successfully:", orderData);
+    }
 
     return NextResponse.json({
       orderId: order.id,

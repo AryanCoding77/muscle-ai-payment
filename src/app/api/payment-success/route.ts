@@ -1,6 +1,14 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { supabaseAdmin } from "@/utils/supabase-admin";
+import crypto from "crypto";
+import Razorpay from "razorpay";
+
+// Initialize Razorpay for verification
+const razorpay = new Razorpay({
+  key_id: process.env.RAZORPAY_KEY_ID!,
+  key_secret: process.env.RAZORPAY_KEY_SECRET!,
+});
 
 // Regular client for non-admin operations
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL as string;
@@ -17,21 +25,83 @@ const planNameMapping: Record<string, string> = {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { userId, planName, amount, razorpayPaymentId, startDate, endDate } =
-      body;
+    const { 
+      userId, 
+      planName, 
+      amount, 
+      razorpayPaymentId, 
+      razorpayOrderId,
+      razorpaySignature, 
+      startDate, 
+      endDate 
+    } = body;
 
     console.log("Payment success request:", {
       userId,
       planName,
       amount,
       razorpayPaymentId,
+      razorpayOrderId,
+      razorpaySignature,
     });
 
-    if (!userId || !planName || !amount || !razorpayPaymentId) {
+    if (!userId || !planName || !amount || !razorpayPaymentId || !razorpayOrderId || !razorpaySignature) {
       return NextResponse.json(
         { error: "Missing required fields" },
         { status: 400 }
       );
+    }
+
+    // Verify the payment signature
+    const generatedSignature = crypto
+      .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET!)
+      .update(razorpayOrderId + "|" + razorpayPaymentId)
+      .digest("hex");
+
+    const isSignatureValid = generatedSignature === razorpaySignature;
+
+    if (!isSignatureValid) {
+      console.error("Payment signature verification failed");
+      return NextResponse.json(
+        { error: "Invalid payment signature" },
+        { status: 400 }
+      );
+    }
+
+    // Verify payment status with Razorpay API
+    try {
+      const payment = await razorpay.payments.fetch(razorpayPaymentId);
+      
+      if (payment.status !== "captured" && payment.status !== "authorized") {
+        console.error("Payment not captured or authorized:", payment.status);
+        return NextResponse.json(
+          { error: "Payment not completed" },
+          { status: 400 }
+        );
+      }
+      
+      console.log("Payment verified with Razorpay:", payment.status);
+    } catch (error) {
+      console.error("Error verifying payment with Razorpay:", error);
+      return NextResponse.json(
+        { error: "Could not verify payment with Razorpay" },
+        { status: 500 }
+      );
+    }
+
+    // Check if this payment has already been processed
+    const { data: existingTransaction } = await supabaseAdmin
+      .from("subscription_transactions")
+      .select("id")
+      .eq("razorpay_payment_id", razorpayPaymentId)
+      .single();
+
+    if (existingTransaction) {
+      console.log("Payment already processed:", existingTransaction);
+      return NextResponse.json({ 
+        success: true, 
+        message: "Payment already processed" 
+      });
     }
 
     // Map the incoming plan name to the one in the database
@@ -64,6 +134,9 @@ export async function POST(request: Request) {
         endDate ||
         new Date(new Date().setDate(new Date().getDate() + 30)).toISOString(),
       status: "active",
+      // Set monthly quota based on plan name
+      monthly_quota: mappedPlanName === "Pro" ? 20 : 
+                    mappedPlanName === "Ultimate" ? 100 : 5,
     };
 
     const { data: subscription, error: subscriptionError } = await supabaseAdmin
@@ -91,10 +164,12 @@ export async function POST(request: Request) {
         user_id: userId,
         plan_id: planData.id,
         razorpay_payment_id: razorpayPaymentId,
+        razorpay_order_id: razorpayOrderId,
         amount: amount,
         currency: "INR",
         status: "success",
         payment_date: new Date().toISOString(),
+        verified: true,
       };
 
       console.log("Attempting to record transaction:", transactionData);
@@ -114,6 +189,13 @@ export async function POST(request: Request) {
       } else {
         console.log("Transaction recorded successfully:", transaction);
       }
+
+      // Update order status
+      await supabaseAdmin
+        .from("razorpay_orders")
+        .update({ status: "paid" })
+        .eq("order_id", razorpayOrderId);
+
     } catch (error) {
       console.error("Exception recording transaction:", error);
       // We'll continue even if transaction recording throws an exception

@@ -26,6 +26,9 @@ export async function GET(req: NextRequest) {
         status,
         start_date,
         end_date,
+        quota_used,
+        monthly_quota,
+        last_quota_reset,
         subscription_plans:plan_id (name, price, features, description)
       `
       )
@@ -65,6 +68,9 @@ export async function GET(req: NextRequest) {
         endDate: subscription.end_date,
         status: subscription.status,
         features: subscription.subscription_plans?.features || [],
+        quotaUsed: subscription.quota_used || 0,
+        monthlyQuota: subscription.monthly_quota || 5, // Default to 5 for Starter plan
+        lastQuotaReset: subscription.last_quota_reset || null
       },
     });
   } catch (error) {

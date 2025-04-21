@@ -162,6 +162,9 @@ export async function POST(req: NextRequest) {
         start_date: startDate.toISOString(),
         end_date: endDate.toISOString(),
         status: "active",
+        // Set monthly quota based on plan name
+        monthly_quota: planData.name === "Pro" ? 20 : 
+                      planData.name === "Ultimate" ? 100 : 5,
       })
       .select()
       .single();

@@ -18,6 +18,9 @@ interface Subscription {
   endDate: string;
   status: string;
   features: string[];
+  quotaUsed?: number;
+  monthlyQuota?: number;
+  lastQuotaReset?: string;
 }
 
 interface UserInfo {
