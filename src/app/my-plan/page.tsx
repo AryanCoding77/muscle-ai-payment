@@ -25,19 +25,6 @@ export default function MyPlanPage() {
     });
   };
 
-  // Helper function to calculate days remaining
-  const getDaysRemaining = () => {
-    if (!subscription?.endDate) return 0;
-
-    const endDate = new Date(subscription.endDate);
-    const today = new Date();
-
-    const diffTime = endDate.getTime() - today.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-    return Math.max(0, diffDays);
-  };
-
   return (
     <ProtectedRoute>
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -195,7 +182,7 @@ export default function MyPlanPage() {
                   </div>
 
                   <div className="border-t border-b border-gray-200 dark:border-gray-700 py-4 my-4">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
                         <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">
                           Subscription Cost
@@ -212,36 +199,6 @@ export default function MyPlanPage() {
                           {formatDate(subscription.startDate)}
                         </p>
                       </div>
-                      <div>
-                        <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">
-                          End Date
-                        </p>
-                        <p className="text-lg font-medium text-gray-900 dark:text-white">
-                          {formatDate(subscription.endDate)}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="mt-4">
-                    <div className="mb-2 flex justify-between">
-                      <span className="text-sm text-gray-500 dark:text-gray-400">
-                        Days Remaining
-                      </span>
-                      <span className="text-sm font-medium text-gray-900 dark:text-white">
-                        {getDaysRemaining()} days
-                      </span>
-                    </div>
-                    <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
-                      <div
-                        className="bg-blue-500 h-2.5 rounded-full"
-                        style={{
-                          width: `${Math.min(
-                            100,
-                            Math.max(0, (getDaysRemaining() / 30) * 100)
-                          )}%`,
-                        }}
-                      ></div>
                     </div>
                   </div>
 

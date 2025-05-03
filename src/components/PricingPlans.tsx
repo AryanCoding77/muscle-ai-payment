@@ -125,7 +125,7 @@ export default function PricingPlans() {
               <div className="mb-6">
                 <div className="flex items-baseline">
                   <span className="text-3xl font-bold text-gray-900 dark:text-white">
-                    ₹499
+                    ₹299
                   </span>
                   <span className="text-gray-500 dark:text-gray-400 ml-2 text-sm">
                     / month
@@ -136,7 +136,7 @@ export default function PricingPlans() {
               <div className="block mb-6">
                 <RazorpayPayment
                   planName="Starter"
-                  amount={499}
+                  amount={299}
                   onSuccess={handlePaymentSuccess}
                   onFailure={handlePaymentFailure}
                 />
@@ -241,7 +241,7 @@ export default function PricingPlans() {
               <div className="mb-6">
                 <div className="flex items-baseline">
                   <span className="text-3xl font-bold text-gray-900 dark:text-white">
-                    ₹999
+                    ₹599
                   </span>
                   <span className="text-gray-500 dark:text-gray-400 ml-2 text-sm">
                     / month
@@ -252,7 +252,7 @@ export default function PricingPlans() {
               <div className="block mb-6">
                 <RazorpayPayment
                   planName="Pro"
-                  amount={999}
+                  amount={599}
                   onSuccess={handlePaymentSuccess}
                   onFailure={handlePaymentFailure}
                 />
@@ -351,7 +351,7 @@ export default function PricingPlans() {
               <div className="mb-6">
                 <div className="flex items-baseline">
                   <span className="text-3xl font-bold text-gray-900 dark:text-white">
-                    ₹1999
+                    ₹999
                   </span>
                   <span className="text-gray-500 dark:text-gray-400 ml-2 text-sm">
                     / month
@@ -362,7 +362,7 @@ export default function PricingPlans() {
               <div className="block mb-6">
                 <RazorpayPayment
                   planName="Ultimate"
-                  amount={1999}
+                  amount={999}
                   onSuccess={handlePaymentSuccess}
                   onFailure={handlePaymentFailure}
                 />
