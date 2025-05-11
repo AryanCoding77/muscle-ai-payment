@@ -28,6 +28,7 @@ export default function RazorpayPayment({
   const { userInfo } = useUser();
   const { user } = useAuth0();
   const [isProcessing, setIsProcessing] = useState(false);
+  const currency = "USD"; // Always use USD
 
   const saveSubscription = async (response: any) => {
     setIsProcessing(true);
@@ -71,6 +72,7 @@ export default function RazorpayPayment({
           razorpaySignature: response.razorpay_signature,
           startDate: today.toISOString(),
           endDate: endDate.toISOString(),
+          currency: currency,
         }),
       });
 
@@ -90,7 +92,7 @@ export default function RazorpayPayment({
             planName,
             amount,
             paymentId: response.razorpay_payment_id,
-            currency: "INR",
+            currency: currency,
           }),
         });
 
@@ -163,6 +165,7 @@ export default function RazorpayPayment({
           amount,
           planName,
           userId: user?.sub, // Add user ID for later verification
+          currency: currency, // Pass the currency
         }),
       });
 

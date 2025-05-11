@@ -7,7 +7,8 @@ CREATE TABLE IF NOT EXISTS subscription_plans (
   duration_days INTEGER NOT NULL DEFAULT 30,
   features JSONB,
   is_active BOOLEAN DEFAULT TRUE,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  currency TEXT NOT NULL DEFAULT 'INR'
 );
 
 -- Create user_subscriptions table
@@ -97,11 +98,11 @@ FOR EACH ROW
 EXECUTE FUNCTION trigger_update_timestamp();
 
 -- Insert default subscription plans
-INSERT INTO subscription_plans (name, description, price, duration_days, features) 
+INSERT INTO subscription_plans (name, description, price, duration_days, features, currency) 
 VALUES 
-  ('Starter', 'For individuals starting their fitness journey.', 1999, 30, '{"features": ["Basic muscle analysis", "5 analyses per month", "Email support"]}'),
-  ('Enterprise', 'For dedicated fitness enthusiasts.', 4999, 30, '{"features": ["Advanced muscle analysis", "25 analyses per month", "Priority support"]}'),
-  ('Business', 'For professional fitness trainers.', 7499, 30, '{"features": ["Expert-level analysis", "Unlimited analyses", "24/7 dedicated support"]}');
+  ('Starter', 'For individuals starting their fitness journey.', 4, 30, '{"features": ["Basic muscle analysis", "5 analyses per month", "Email support"], "monthly_quota": 5, "price": 4}', 'USD'),
+  ('Enterprise', 'For dedicated fitness enthusiasts.', 7, 30, '{"features": ["Advanced muscle analysis", "20 analyses per month", "Priority support"], "monthly_quota": 20, "price": 7}', 'USD'),
+  ('Business', 'For professional fitness trainers.', 14, 30, '{"features": ["Expert-level analysis", "100 analyses per month", "24/7 dedicated support"], "monthly_quota": 100, "price": 14}', 'USD');
 
 -- Grant permissions
 GRANT SELECT ON subscription_plans TO anon, authenticated;

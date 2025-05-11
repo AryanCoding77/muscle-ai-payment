@@ -12,6 +12,7 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
     const { amount, planName, userId } = body;
+    const currency = "USD"; // Always use USD
 
     if (!amount || !planName || !userId) {
       return NextResponse.json(
@@ -22,8 +23,8 @@ export async function POST(request: Request) {
 
     // Create order
     const order = await razorpay.orders.create({
-      amount: amount * 100, // Razorpay expects amount in smallest currency unit (paise)
-      currency: "INR",
+      amount: amount * 100, // Razorpay expects amount in smallest currency unit (cents)
+      currency: currency,
       notes: {
         planName: planName,
         userId: userId,

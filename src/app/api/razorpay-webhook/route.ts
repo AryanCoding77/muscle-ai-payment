@@ -135,7 +135,7 @@ export async function POST(request: Request) {
         // You would need to store this when creating the order
         const { data: orderData, error: orderError } = await supabaseAdmin
           .from("razorpay_orders")
-          .select("user_id, plan_name")
+          .select("user_id, plan_name, currency")
           .eq("order_id", orderId)
           .single();
           
@@ -186,7 +186,7 @@ export async function POST(request: Request) {
           });
         }
         
-        const { user_id: userId, plan_name: planName } = orderData;
+        const { user_id: userId, plan_name: planName, currency } = orderData;
         console.log("Order data found:", { userId, planName });
         
         // Get the subscription plan ID
@@ -251,7 +251,7 @@ export async function POST(request: Request) {
             razorpay_payment_id: paymentId,
             razorpay_order_id: orderId,
             amount: amount,
-            currency: "INR",
+            currency: currency || "INR",
             status: "success",
             payment_date: new Date().toISOString(),
             verified: true,
@@ -330,7 +330,7 @@ export async function POST(request: Request) {
           razorpay_payment_id: paymentId,
           razorpay_order_id: orderId,
           amount: amount,
-          currency: "INR",
+          currency: currency || "INR",
           status: "success",
           payment_date: new Date().toISOString(),
           verified: true,

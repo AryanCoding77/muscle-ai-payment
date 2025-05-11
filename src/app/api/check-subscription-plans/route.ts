@@ -36,7 +36,7 @@ export async function GET(request: Request) {
             name TEXT NOT NULL UNIQUE,
             description TEXT,
             price DECIMAL(10, 2) NOT NULL,
-            currency TEXT NOT NULL DEFAULT 'INR',
+            currency TEXT NOT NULL DEFAULT 'USD',
             interval TEXT NOT NULL DEFAULT 'one-time',
             features JSONB,
             analyses_per_month INTEGER NOT NULL,
@@ -67,8 +67,8 @@ export async function GET(request: Request) {
         {
           name: "Starter",
           description: "Basic features for individuals - One-time payment",
-          price: 499,
-          currency: "INR",
+          price: 4,
+          currency: "USD",
           interval: "one-time",
           analyses_per_month: 5,
           features: JSON.stringify(["Basic Analysis", "5 Analyses per month", "Email Support"])
@@ -76,8 +76,8 @@ export async function GET(request: Request) {
         {
           name: "Pro",
           description: "Advanced features for professionals - One-time payment",
-          price: 999,
-          currency: "INR",
+          price: 7,
+          currency: "USD",
           interval: "one-time",
           analyses_per_month: 20,
           features: JSON.stringify(["Advanced Analysis", "20 Analyses per month", "Priority Support"])
@@ -85,8 +85,8 @@ export async function GET(request: Request) {
         {
           name: "Ultimate",
           description: "Complete package for businesses - One-time payment",
-          price: 1999,
-          currency: "INR",
+          price: 14,
+          currency: "USD",
           interval: "one-time",
           analyses_per_month: 100,
           features: JSON.stringify(["Premium Analysis", "100 Analyses per month", "24/7 Support", "Custom Reports"])

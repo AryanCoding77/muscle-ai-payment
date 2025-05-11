@@ -13,7 +13,9 @@ export default function Providers({ children }: { children: ReactNode }) {
         redirect_uri: "http://localhost:3000/callback",
       }}
     >
-      <UserProvider>{children}</UserProvider>
+      <UserProvider>
+        {children}
+      </UserProvider>
     </Auth0Provider>
   );
 }

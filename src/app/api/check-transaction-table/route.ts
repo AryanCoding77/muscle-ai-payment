@@ -35,13 +35,13 @@ export async function GET(req: NextRequest) {
     if (result.table_exists) {
       try {
         // Try to get table structure
-        const { data: sample, error: sampleError } = await supabaseAdmin
+        const { data: sampleData, error: sampleError } = await supabaseAdmin
           .from('subscription_transactions')
-          .select('*')
-          .limit(1);
+          .select('id, user_id, plan_id, amount, currency, status, payment_date')
+          .limit(5);
         
-        if (!sampleError && sample && sample.length > 0) {
-          result.columns = Object.keys(sample[0]);
+        if (!sampleError && sampleData && sampleData.length > 0) {
+          result.columns = Object.keys(sampleData[0]);
         } else {
           // No data yet, try to describe the table
           const { error: insertError } = await supabaseAdmin

@@ -18,6 +18,7 @@ export default function ProfilePage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [imageError, setImageError] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -80,6 +81,28 @@ export default function ProfilePage() {
     }
   };
 
+  // Fallback avatar for when image fails to load
+  const renderAvatar = () => {
+    if (imageError || !userInfo.picture) {
+      return (
+        <div className="w-full h-full bg-blue-600 flex items-center justify-center text-2xl font-bold">
+          {userInfo.name?.charAt(0) || userInfo.email?.charAt(0) || "U"}
+        </div>
+      );
+    }
+
+    return (
+      <Image
+        src={userInfo.picture}
+        alt={userInfo.name || "Profile picture"}
+        fill
+        sizes="(max-width: 768px) 96px, 96px"
+        className="object-cover"
+        onError={() => setImageError(true)}
+      />
+    );
+  };
+
   return (
     <ProtectedRoute>
       <div className="min-h-screen bg-black text-white">
@@ -111,7 +134,11 @@ export default function ProfilePage() {
                   Dashboard
                 </Link>
                 <button
-                  onClick={() => logout({ returnTo: window.location.origin })}
+                  onClick={() => logout({ 
+                    logoutParams: {
+                      returnTo: window.location.origin
+                    }
+                  })}
                   className="px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700 transition-colors text-sm font-medium"
                 >
                   Logout
@@ -128,21 +155,7 @@ export default function ProfilePage() {
             <div className="bg-gray-900 rounded-xl p-6 mb-8 border border-gray-800">
               <div className="flex flex-col md:flex-row items-start md:items-center gap-6">
                 <div className="relative w-24 h-24 rounded-full overflow-hidden bg-gray-800">
-                  {userInfo.picture ? (
-                    <Image
-                      src={userInfo.picture}
-                      alt={userInfo.name || "Profile picture"}
-                      fill
-                      sizes="(max-width: 768px) 96px, 96px"
-                      className="object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-full bg-blue-600 flex items-center justify-center text-2xl font-bold">
-                      {userInfo.name?.charAt(0) ||
-                        userInfo.email?.charAt(0) ||
-                        "U"}
-                    </div>
-                  )}
+                  {renderAvatar()}
                 </div>
 
                 <div className="flex-1">
@@ -158,20 +171,21 @@ export default function ProfilePage() {
                               sizes="(max-width: 768px) 96px, 96px"
                               className="object-cover"
                             />
-                          ) : userInfo.picture ? (
+                          ) : imageError || !userInfo.picture ? (
+                            <div className="w-full h-full bg-blue-600 flex items-center justify-center text-2xl font-bold">
+                              {userInfo.name?.charAt(0) ||
+                                userInfo.email?.charAt(0) ||
+                                "U"}
+                            </div>
+                          ) : (
                             <Image
                               src={userInfo.picture}
                               alt={userInfo.name || "Profile picture"}
                               fill
                               sizes="(max-width: 768px) 96px, 96px"
                               className="object-cover"
+                              onError={() => setImageError(true)}
                             />
-                          ) : (
-                            <div className="w-full h-full bg-blue-600 flex items-center justify-center text-2xl font-bold">
-                              {userInfo.name?.charAt(0) ||
-                                userInfo.email?.charAt(0) ||
-                                "U"}
-                            </div>
                           )}
                         </div>
                         <div>
@@ -254,13 +268,13 @@ export default function ProfilePage() {
                         <div>
                           <span className="block">Member since</span>
                           <span className="text-white">
-                            {new Date(userInfo.created_at).toLocaleDateString()}
+                            {userInfo.created_at ? new Date(userInfo.created_at).toLocaleDateString() : "N/A"}
                           </span>
                         </div>
                         <div>
                           <span className="block">Last login</span>
                           <span className="text-white">
-                            {new Date(userInfo.last_login).toLocaleDateString()}
+                            {userInfo.last_login ? new Date(userInfo.last_login).toLocaleDateString() : "N/A"}
                           </span>
                         </div>
                       </div>

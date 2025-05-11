@@ -1,250 +1,249 @@
 "use client";
 
-import React, { useEffect } from "react";
+import { useState } from "react";
+import { formatDate } from "@/utils/date-utils";
 import { useUser } from "@/context/UserContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import Link from "next/link";
-import QuotaDisplay from "@/components/QuotaDisplay";
+import { formatCurrency } from "@/utils/currency-utils";
 
 export default function MyPlanPage() {
   const { userInfo, fetchUserSubscription, isLoading } = useUser();
-  const { subscription } = userInfo;
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
-  useEffect(() => {
-    // Fetch subscription data when the component mounts
-    fetchUserSubscription();
-  }, []);
-
-  // Helper function to format date
-  const formatDate = (dateString: string) => {
-    if (!dateString) return "N/A";
-    return new Date(dateString).toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    });
+  // Refresh subscription data
+  const refreshSubscription = async () => {
+    setIsRefreshing(true);
+    await fetchUserSubscription();
+    setIsRefreshing(false);
   };
+
+  // Format amount for display - ensure it's in USD
+  const displayAmount = userInfo.subscription ? 
+    formatCurrency(userInfo.subscription.amount) : "$0";
+    
+  // Safe access to quota values with null checks  
+  const quotaUsed = userInfo.subscription?.quotaUsed || 0;
+  const monthlyQuota = userInfo.subscription?.monthlyQuota || 0;
+  const quotaPercentage = monthlyQuota ? 
+    Math.min((quotaUsed / monthlyQuota) * 100, 100) : 0;
 
   return (
     <ProtectedRoute>
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-        <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
-          <div className="container mx-auto px-4 md:px-6 py-4">
-            <div className="flex items-center justify-between">
-              <Link href="/main" className="flex items-center space-x-3">
-                <div className="w-8 h-8 bg-gradient-to-br from-cyan-400 via-blue-500 to-blue-600 rounded-2xl flex items-center justify-center">
-                  <svg
-                    className="w-5 h-5 text-white"
-                    viewBox="0 0 24 24"
-                    fill="currentColor"
-                  >
-                    <path d="M20.5 11.5h-1.8v-4h1.8c.6 0 1-.4 1-1s-.4-1-1-1h-2.6c-.1-1.3-.7-2.4-1.8-3.2-.4-.3-1.1-.2-1.4.2-.3.4-.2 1.1.2 1.4.6.4.9 1 .9 1.7v11.9c0 .7-.3 1.3-.9 1.7-.4.3-.5.9-.2 1.4.2.3.5.4.8.4.2 0 .4-.1.6-.2 1.1-.8 1.7-1.9 1.8-3.2h2.6c.6 0 1-.4 1-1s-.4-1-1-1h-1.8v-4h1.8c.6 0 1-.4 1-1s-.4-1-1-1zM3.5 11.5h1.8v-4H3.5c-.6 0-1 .4-1 1s.4 1 1 1h1.8v4H3.5c-.6 0-1 .4-1 1s.4 1 1 1h2.6c.1 1.3.7 2.4 1.8 3.2.2.1.4.2.6.2.3 0 .6-.1.8-.4.3-.4.2-1.1-.2-1.4-.6-.4-.9-1-.9-1.7V7.5c0-.7.3-1.3.9-1.7.4-.3.5-.9.2-1.4-.3-.4-.9-.5-1.4-.2-1.1.8-1.7 1.9-1.8 3.2H3.5c-.6 0-1 .4-1 1s.4 1 1 1z" />
-                  </svg>
-                </div>
-                <span className="font-bold text-xl text-gray-900 dark:text-white">
-                  MuscleAI
-                </span>
-              </Link>
-
-              {/* Home Button */}
-              <Link href="/main">
-                <button className="flex items-center px-4 py-2 rounded-lg bg-blue-500 hover:bg-blue-600 text-white transition-colors text-sm font-medium">
-                  <svg
-                    className="w-4 h-4 mr-2"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
-                    />
-                  </svg>
-                  Home
-                </button>
-              </Link>
-            </div>
-          </div>
-        </header>
-
-        <main className="container mx-auto px-4 md:px-6 py-8">
-          <div className="max-w-3xl mx-auto">
-            <div className="flex justify-between items-center mb-8">
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-                My Subscription Plan
+      <div className="bg-gray-50 dark:bg-gray-900 min-h-screen">
+        <main className="container mx-auto py-8 px-4">
+          <div className="max-w-4xl mx-auto">
+            <div className="mb-8">
+              <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+                My Subscription
               </h1>
-              <button
-                onClick={() => fetchUserSubscription()}
-                disabled={isLoading}
-                className="flex items-center px-3 py-1.5 rounded bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors text-sm"
-              >
-                {isLoading ? (
-                  <svg
-                    className="animate-spin h-5 w-5 text-gray-500 dark:text-gray-300"
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                  >
-                    <circle
-                      className="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                    ></circle>
-                    <path
-                      className="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                    ></path>
-                  </svg>
-                ) : (
-                  <svg
-                    className="w-5 h-5 text-gray-500 dark:text-gray-300"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-                    />
-                  </svg>
-                )}
-                <span className="ml-1.5">
-                  {isLoading ? "Refreshing..." : "Refresh"}
-                </span>
-              </button>
+              <p className="text-gray-600 dark:text-gray-400">
+                Manage your subscription plan and billing details
+              </p>
             </div>
 
-            {isLoading ? (
-              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden">
-                <div className="p-6 flex justify-center items-center h-64">
-                  <div className="flex flex-col items-center">
-                    <svg
-                      className="animate-spin h-10 w-10 text-blue-500 mb-4"
-                      xmlns="http://www.w3.org/2000/svg"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                    >
-                      <circle
-                        className="opacity-25"
-                        cx="12"
-                        cy="12"
-                        r="10"
-                        stroke="currentColor"
-                        strokeWidth="4"
-                      ></circle>
-                      <path
-                        className="opacity-75"
-                        fill="currentColor"
-                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                      ></path>
-                    </svg>
-                    <p className="text-gray-600 dark:text-gray-300">
-                      Loading subscription data...
-                    </p>
-                  </div>
+            {isLoading || isRefreshing ? (
+              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 mb-6">
+                <div className="animate-pulse flex flex-col">
+                  <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-1/4 mb-6"></div>
+                  <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/2 mb-4"></div>
+                  <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4 mb-4"></div>
+                  <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-2/3 mb-4"></div>
+                  <div className="h-10 bg-gray-200 dark:bg-gray-700 rounded w-1/4 mt-4"></div>
                 </div>
               </div>
-            ) : subscription && subscription.status === "active" ? (
-              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden">
-                <div className="p-6">
-                  <div className="flex items-center mb-6">
-                    <div className="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center mr-4">
-                      <svg
-                        className="w-6 h-6 text-white"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
+            ) : userInfo?.subscription &&
+              userInfo.subscription.status === "active" ? (
+              <>
+                <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden mb-6">
+                  <div className="p-6">
+                    <div className="flex items-center mb-6">
+                      <div
+                        className={`w-16 h-16 rounded-lg flex items-center justify-center mr-4 ${
+                          userInfo.subscription.plan === "Starter"
+                            ? "bg-blue-100 text-blue-600"
+                            : userInfo.subscription.plan === "Pro"
+                            ? "bg-purple-100 text-purple-600"
+                            : "bg-green-100 text-green-600"
+                        }`}
                       >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                        />
-                      </svg>
-                    </div>
-                    <div>
-                      <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-                        {subscription.plan} Plan
-                      </h2>
-                      <p className="text-gray-500 dark:text-gray-400">
-                        Active Subscription
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="border-t border-b border-gray-200 dark:border-gray-700 py-4 my-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">
-                          Subscription Cost
-                        </p>
-                        <p className="text-lg font-medium text-gray-900 dark:text-white">
-                          ₹{subscription.amount}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">
-                          Start Date
-                        </p>
-                        <p className="text-lg font-medium text-gray-900 dark:text-white">
-                          {formatDate(subscription.startDate)}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="mt-6">
-                    <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
-                      <div className="flex">
-                        <div className="flex-shrink-0">
+                        {userInfo.subscription.plan === "Starter" ? (
                           <svg
-                            className="h-5 w-5 text-blue-500"
-                            fill="currentColor"
-                            viewBox="0 0 20 20"
+                            className="w-8 h-8"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
                           >
                             <path
-                              fillRule="evenodd"
-                              d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2h-1V9z"
-                              clipRule="evenodd"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M13 10V3L4 14h7v7l9-11h-7z"
                             />
                           </svg>
-                        </div>
-                        <div className="ml-3">
-                          <h3 className="text-sm font-medium text-blue-800 dark:text-blue-300">
-                            Plan benefits
+                        ) : userInfo.subscription.plan === "Pro" ? (
+                          <svg
+                            className="w-8 h-8"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
+                            />
+                          </svg>
+                        ) : (
+                          <svg
+                            className="w-8 h-8"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                            />
+                          </svg>
+                        )}
+                      </div>
+                      <div>
+                        <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+                          {userInfo.subscription.plan} Plan
+                        </h2>
+                        <p className="text-green-600 dark:text-green-400 text-sm font-medium">
+                          Active
+                        </p>
+                      </div>
+                      <button
+                        onClick={refreshSubscription}
+                        disabled={isRefreshing}
+                        className="ml-auto text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
+                      >
+                        <svg
+                          className={`w-5 h-5 ${
+                            isRefreshing ? "animate-spin" : ""
+                          }`}
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                          />
+                        </svg>
+                      </button>
+                    </div>
+
+                    <div className="mt-6 space-y-4">
+                      <div className="flex flex-col md:flex-row md:items-center justify-between pb-4 border-b border-gray-100 dark:border-gray-700">
+                        <div>
+                          <h3 className="text-sm text-gray-500 dark:text-gray-400 mb-1">
+                            Analyses Used
                           </h3>
-                          <div className="mt-2 text-sm text-blue-700 dark:text-blue-400">
-                            <ul className="list-disc pl-5 space-y-1">
-                              {subscription.features &&
-                              subscription.features.length > 0 ? (
-                                subscription.features.map((feature, index) => (
-                                  <li key={index}>{feature}</li>
-                                ))
-                              ) : (
-                                <>
-                                  <li>Advanced muscle analysis</li>
-                                  <li>Personalized workout recommendations</li>
-                                  <li>Unlimited access to premium features</li>
-                                  <li>Priority customer support</li>
-                                </>
-                              )}
-                            </ul>
+                          <p className="text-lg font-medium text-gray-900 dark:text-white">
+                            {quotaUsed} / {monthlyQuota || "∞"}
+                          </p>
+                        </div>
+                        <div>
+                          <div className="w-full md:w-64 h-4 bg-gray-200 dark:bg-gray-700 rounded-full mt-2">
+                            <div
+                              className="h-4 bg-blue-500 rounded-full"
+                              style={{
+                                width: `${quotaPercentage}%`,
+                              }}
+                            ></div>
                           </div>
                         </div>
                       </div>
                     </div>
+
+                    <div className="border-t border-b border-gray-200 dark:border-gray-700 py-4 my-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">
+                            Subscription Cost
+                          </p>
+                          <p className="text-lg font-medium text-gray-900 dark:text-white">
+                            {displayAmount} USD
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">
+                            Start Date
+                          </p>
+                          <p className="text-lg font-medium text-gray-900 dark:text-white">
+                            {formatDate(userInfo.subscription.startDate)}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="mt-6">
+                      <div className="text-sm text-gray-500 dark:text-gray-400">
+                        Your plan will automatically renew on{" "}
+                        <span className="font-medium">
+                          {formatDate(userInfo.subscription.endDate)}
+                        </span>
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </div>
+
+                <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden">
+                  <div className="p-6">
+                    <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
+                      Payment History
+                    </h2>
+                    <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                      <thead>
+                        <tr>
+                          <th
+                            scope="col"
+                            className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
+                          >
+                            Date
+                          </th>
+                          <th
+                            scope="col"
+                            className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
+                          >
+                            Amount
+                          </th>
+                          <th
+                            scope="col"
+                            className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
+                          >
+                            Status
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                        <tr>
+                          <td className="px-4 py-4 text-sm text-gray-900 dark:text-white">
+                            {formatDate(userInfo.subscription.startDate)}
+                          </td>
+                          <td className="px-4 py-4 text-sm text-gray-900 dark:text-white">
+                            {displayAmount} USD
+                          </td>
+                          <td className="px-4 py-4 text-sm">
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
+                              Completed
+                            </span>
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </>
             ) : (
               <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden">
                 <div className="p-6 text-center">

@@ -1,6 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/utils/supabase-admin";
 
+// Function to ensure amount is in USD
+function convertToUSD(amount: number, currency?: string): number {
+  // If we know it's already USD, return as is
+  if (currency === 'USD') return amount;
+  
+  // If amount is over 100, it's likely INR and needs conversion
+  // This assumes USD prices are typically under 100
+  if (amount > 100) {
+    return Math.round(amount / 80); // 1 USD ≈ 80 INR
+  }
+  
+  // If it's a small amount, assume it's already in USD
+  return amount;
+}
+
 export async function GET(req: NextRequest) {
   try {
     // Get userId from query parameters
@@ -29,7 +44,7 @@ export async function GET(req: NextRequest) {
         quota_used,
         monthly_quota,
         last_quota_reset,
-        subscription_plans:plan_id (name, price, features, description)
+        subscription_plans:plan_id (name, price, features, description, currency)
       `
       )
       .eq("user_id", userId)
@@ -57,13 +72,19 @@ export async function GET(req: NextRequest) {
 
     console.log("Found subscription:", subscription);
 
+    // Ensure price is in USD
+    const originalPrice = subscription.subscription_plans?.price || 0;
+    const currency = subscription.subscription_plans?.currency || 'INR';
+    const usdPrice = convertToUSD(originalPrice, currency);
+
     return NextResponse.json({
       subscription: {
         id: subscription.id,
         userId: subscription.user_id,
         planId: subscription.plan_id,
         plan: subscription.subscription_plans?.name || "Unknown Plan",
-        amount: subscription.subscription_plans?.price || 0,
+        amount: usdPrice,
+        currency: "USD", // Always set currency to USD
         startDate: subscription.start_date,
         endDate: subscription.end_date,
         status: subscription.status,

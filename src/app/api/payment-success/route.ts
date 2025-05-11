@@ -166,7 +166,7 @@ export async function POST(request: Request) {
         razorpay_payment_id: razorpayPaymentId,
         razorpay_order_id: razorpayOrderId,
         amount: amount,
-        currency: "INR",
+        currency: body.currency || "INR",
         status: "success",
         payment_date: new Date().toISOString(),
         verified: true,

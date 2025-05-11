@@ -22,11 +22,12 @@ Stores information about available subscription plans:
 - `id` - UUID primary key (automatically generated)
 - `name` - Name of the plan (e.g., "Starter", "Enterprise", "Business")
 - `description` - Text description of the plan
-- `price` - Numeric price of the plan
+- `price` - Numeric price of the plan (in USD)
 - `duration_days` - Number of days the subscription lasts (default: 30)
 - `features` - JSON field containing features included in the plan
 - `is_active` - Boolean indicating if the plan is currently available
 - `created_at` - Timestamp when the plan was created
+- `currency` - Currency of the plan price (default: "USD")
 
 ### 2. user_subscriptions
 
@@ -49,18 +50,29 @@ Records payment transactions:
 - `subscription_id` - Reference to the subscription plan
 - `razorpay_payment_id` - Payment ID from Razorpay
 - `amount` - Payment amount
-- `currency` - Payment currency (default: "INR")
+- `currency` - Payment currency (default: "USD")
 - `status` - Payment status ("success", "failed", or "pending")
 - `payment_date` - Timestamp of the payment
 - `metadata` - Additional payment information as JSON
 
 ## Default Plans
 
-The migration automatically creates three default plans:
+The system initializes with three default subscription plans:
 
-1. **Starter** (₹1999) - Basic features for beginners
-2. **Enterprise** (₹4999) - Advanced features for enthusiasts
-3. **Business** (₹7499) - Premium features for professionals
+1. **Starter Plan** - $4 USD
+   - Basic muscle analysis
+   - 5 analyses per month
+   - Email support
+
+2. **Enterprise/Pro Plan** - $7 USD
+   - Advanced muscle analysis
+   - 20 analyses per month
+   - Priority support
+
+3. **Business/Ultimate Plan** - $14 USD
+   - Expert-level analysis
+   - 100 analyses per month
+   - 24/7 dedicated support
 
 ## Permissions
 
