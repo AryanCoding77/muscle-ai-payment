@@ -10,7 +10,7 @@ export default function Providers({ children }: { children: ReactNode }) {
       domain={process.env.NEXT_PUBLIC_AUTH0_DOMAIN!}
       clientId={process.env.NEXT_PUBLIC_AUTH0_CLIENT_ID!}
       authorizationParams={{
-        redirect_uri: "http://localhost:3000/callback",
+        redirect_uri: typeof window !== "undefined" ? `${window.location.origin}/callback` : undefined,
       }}
     >
       <UserProvider>
