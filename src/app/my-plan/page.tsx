@@ -31,19 +31,41 @@ export default function MyPlanPage() {
   return (
     <ProtectedRoute>
       <div className="bg-gray-50 dark:bg-gray-900 min-h-screen">
-        <main className="container mx-auto py-8 px-4">
+        <main className="container mx-auto py-6 sm:py-8 px-4">
           <div className="max-w-4xl mx-auto">
-            <div className="mb-8">
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+            <div className="mb-6">
+              <Link 
+                href="/main" 
+                className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md font-medium shadow-sm hover:bg-blue-700 transition-colors"
+              >
+                <svg 
+                  className="w-5 h-5 mr-2" 
+                  fill="none" 
+                  stroke="currentColor" 
+                  viewBox="0 0 24 24"
+                >
+                  <path 
+                    strokeLinecap="round" 
+                    strokeLinejoin="round" 
+                    strokeWidth={2} 
+                    d="M10 19l-7-7m0 0l7-7m-7 7h18" 
+                  />
+                </svg>
+                Back to Home
+              </Link>
+            </div>
+
+            <div className="mb-6 sm:mb-8">
+              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-2">
                 My Subscription
               </h1>
-              <p className="text-gray-600 dark:text-gray-400">
+              <p className="text-gray-600 dark:text-gray-400 text-sm sm:text-base">
                 Manage your subscription plan and billing details
               </p>
             </div>
 
             {isLoading || isRefreshing ? (
-              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 mb-6">
+              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-4 sm:p-6 mb-6">
                 <div className="animate-pulse flex flex-col">
                   <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-1/4 mb-6"></div>
                   <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/2 mb-4"></div>
@@ -56,10 +78,10 @@ export default function MyPlanPage() {
               userInfo.subscription.status === "active" ? (
               <>
                 <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden mb-6">
-                  <div className="p-6">
-                    <div className="flex items-center mb-6">
+                  <div className="p-4 sm:p-6">
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-4 mb-6">
                       <div
-                        className={`w-16 h-16 rounded-lg flex items-center justify-center mr-4 ${
+                        className={`w-12 h-12 sm:w-16 sm:h-16 rounded-lg flex items-center justify-center mr-4 ${
                           userInfo.subscription.plan === "Starter"
                             ? "bg-blue-100 text-blue-600"
                             : userInfo.subscription.plan === "Pro"
@@ -69,7 +91,7 @@ export default function MyPlanPage() {
                       >
                         {userInfo.subscription.plan === "Starter" ? (
                           <svg
-                            className="w-8 h-8"
+                            className="w-6 h-6 sm:w-8 sm:h-8"
                             fill="none"
                             stroke="currentColor"
                             viewBox="0 0 24 24"
@@ -83,7 +105,7 @@ export default function MyPlanPage() {
                           </svg>
                         ) : userInfo.subscription.plan === "Pro" ? (
                           <svg
-                            className="w-8 h-8"
+                            className="w-6 h-6 sm:w-8 sm:h-8"
                             fill="none"
                             stroke="currentColor"
                             viewBox="0 0 24 24"
@@ -97,7 +119,7 @@ export default function MyPlanPage() {
                           </svg>
                         ) : (
                           <svg
-                            className="w-8 h-8"
+                            className="w-6 h-6 sm:w-8 sm:h-8"
                             fill="none"
                             stroke="currentColor"
                             viewBox="0 0 24 24"
@@ -111,8 +133,8 @@ export default function MyPlanPage() {
                           </svg>
                         )}
                       </div>
-                      <div>
-                        <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+                      <div className="flex-grow">
+                        <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">
                           {userInfo.subscription.plan} Plan
                         </h2>
                         <p className="text-green-600 dark:text-green-400 text-sm font-medium">
@@ -122,7 +144,7 @@ export default function MyPlanPage() {
                       <button
                         onClick={refreshSubscription}
                         disabled={isRefreshing}
-                        className="ml-auto text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
+                        className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
                       >
                         <svg
                           className={`w-5 h-5 ${
@@ -144,18 +166,18 @@ export default function MyPlanPage() {
 
                     <div className="mt-6 space-y-4">
                       <div className="flex flex-col md:flex-row md:items-center justify-between pb-4 border-b border-gray-100 dark:border-gray-700">
-                        <div>
+                        <div className="mb-2 md:mb-0">
                           <h3 className="text-sm text-gray-500 dark:text-gray-400 mb-1">
                             Analyses Used
                           </h3>
-                          <p className="text-lg font-medium text-gray-900 dark:text-white">
+                          <p className="text-base sm:text-lg font-medium text-gray-900 dark:text-white">
                             {quotaUsed} / {monthlyQuota || "∞"}
                           </p>
                         </div>
-                        <div>
-                          <div className="w-full md:w-64 h-4 bg-gray-200 dark:bg-gray-700 rounded-full mt-2">
+                        <div className="w-full md:w-64">
+                          <div className="w-full h-3 sm:h-4 bg-gray-200 dark:bg-gray-700 rounded-full">
                             <div
-                              className="h-4 bg-blue-500 rounded-full"
+                              className="h-3 sm:h-4 bg-blue-500 rounded-full"
                               style={{
                                 width: `${quotaPercentage}%`,
                               }}
@@ -166,12 +188,12 @@ export default function MyPlanPage() {
                     </div>
 
                     <div className="border-t border-b border-gray-200 dark:border-gray-700 py-4 my-4">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                           <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">
                             Subscription Cost
                           </p>
-                          <p className="text-lg font-medium text-gray-900 dark:text-white">
+                          <p className="text-base sm:text-lg font-medium text-gray-900 dark:text-white">
                             {displayAmount} USD
                           </p>
                         </div>
@@ -179,7 +201,7 @@ export default function MyPlanPage() {
                           <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">
                             Start Date
                           </p>
-                          <p className="text-lg font-medium text-gray-900 dark:text-white">
+                          <p className="text-base sm:text-lg font-medium text-gray-900 dark:text-white">
                             {formatDate(userInfo.subscription.startDate)}
                           </p>
                         </div>
@@ -198,58 +220,60 @@ export default function MyPlanPage() {
                 </div>
 
                 <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden">
-                  <div className="p-6">
-                    <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
+                  <div className="p-4 sm:p-6">
+                    <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white mb-4">
                       Payment History
                     </h2>
-                    <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                      <thead>
-                        <tr>
-                          <th
-                            scope="col"
-                            className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
-                          >
-                            Date
-                          </th>
-                          <th
-                            scope="col"
-                            className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
-                          >
-                            Amount
-                          </th>
-                          <th
-                            scope="col"
-                            className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
-                          >
-                            Status
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                        <tr>
-                          <td className="px-4 py-4 text-sm text-gray-900 dark:text-white">
-                            {formatDate(userInfo.subscription.startDate)}
-                          </td>
-                          <td className="px-4 py-4 text-sm text-gray-900 dark:text-white">
-                            {displayAmount} USD
-                          </td>
-                          <td className="px-4 py-4 text-sm">
-                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
-                              Completed
-                            </span>
-                          </td>
-                        </tr>
-                      </tbody>
-                    </table>
+                    <div className="overflow-x-auto -mx-4 sm:mx-0">
+                      <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                        <thead>
+                          <tr>
+                            <th
+                              scope="col"
+                              className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
+                            >
+                              Date
+                            </th>
+                            <th
+                              scope="col"
+                              className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
+                            >
+                              Amount
+                            </th>
+                            <th
+                              scope="col"
+                              className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
+                            >
+                              Status
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                          <tr>
+                            <td className="px-4 py-3 sm:py-4 text-xs sm:text-sm text-gray-900 dark:text-white whitespace-nowrap">
+                              {formatDate(userInfo.subscription.startDate)}
+                            </td>
+                            <td className="px-4 py-3 sm:py-4 text-xs sm:text-sm text-gray-900 dark:text-white whitespace-nowrap">
+                              {displayAmount} USD
+                            </td>
+                            <td className="px-4 py-3 sm:py-4 text-xs sm:text-sm whitespace-nowrap">
+                              <span className="inline-flex items-center px-2 sm:px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
+                                Completed
+                              </span>
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
                   </div>
                 </div>
               </>
             ) : (
               <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden">
-                <div className="p-6 text-center">
-                  <div className="w-16 h-16 bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
+                <div className="p-4 sm:p-6 text-center">
+                  <div className="w-12 h-12 sm:w-16 sm:h-16 bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
                     <svg
-                      className="w-8 h-8 text-gray-500 dark:text-gray-400"
+                      className="w-6 h-6 sm:w-8 sm:h-8 text-gray-400"
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
@@ -262,17 +286,17 @@ export default function MyPlanPage() {
                       />
                     </svg>
                   </div>
-                  <h2 className="text-xl font-medium text-gray-900 dark:text-white mb-2">
+                  <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
                     No Active Subscription
                   </h2>
-                  <p className="text-gray-500 dark:text-gray-400 mb-6">
-                    You don't have an active subscription plan. Purchase a plan
-                    to unlock all features.
+                  <p className="text-gray-600 dark:text-gray-400 mb-6 max-w-md mx-auto text-sm sm:text-base">
+                    You don't have an active subscription plan yet. Choose a plan to get started with premium features.
                   </p>
-                  <Link href="/main">
-                    <button className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-                      View Plans
-                    </button>
+                  <Link
+                    href="/pricing"
+                    className="inline-block px-6 py-3 bg-blue-600 hover:bg-blue-700 rounded-lg text-white font-medium transition-colors text-sm sm:text-base"
+                  >
+                    View Plans
                   </Link>
                 </div>
               </div>

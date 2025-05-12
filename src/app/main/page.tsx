@@ -207,7 +207,7 @@ export default function Home() {
     try {
       // Extract a list of muscles that cannot be assessed from this angle
       const nonVisibleRegex =
-        /(?:cannot|can't|not possible to|unable to|not visible|impossible to)\s+(?:assess|evaluate|analyze|see|view|rate|determine)\s+(?:the\s+)?([^.,]+)(?:\s+muscles?)?/gi;
+        /(?:cannot|can't|not possible to|unable to|not visible|impossible to)\s+(?:assess|evaluate|analyze|see|view|rate|determine)\s+(?:the\s+)?([^.,]+)(?:\s+muscles?)?/g;
 
       let nonVisibleList: string[] = [];
 
@@ -248,13 +248,13 @@ export default function Home() {
         }
       } else {
         // Fallback to scanning the text for mentions of non-visible muscles
-        const notVisibleMatches = [...analysis.matchAll(nonVisibleRegex)];
-
-        notVisibleMatches.forEach((match) => {
-          if (match[1]) {
-            nonVisibleList.push(match[1].trim());
+        let notVisibleMatch;
+        const regex = new RegExp(nonVisibleRegex);
+        while ((notVisibleMatch = regex.exec(analysis)) !== null) {
+          if (notVisibleMatch[1]) {
+            nonVisibleList.push(notVisibleMatch[1].trim());
           }
-        });
+        }
 
         // Look for explicit statements about what can't be seen
         if (
@@ -299,7 +299,7 @@ export default function Home() {
       const muscleRegex =
         /\d+\.\s+\*\*([^*:]+)(?:\*\*)?:\s*(?:The .+?)?(?:Development:|Rating:)?\s*(\d+)\/10/g;
       const exerciseRegex =
-        /\*\s+(?:Exercises to improve:|Suggested exercises:)(.*?)(?=\d+\.|$|\n\n)/gs;
+        /\*\s+(?:Exercises to improve:|Suggested exercises:)(.*?)(?=\d+\.|$|\n\n)/g;
 
       const muscles: MuscleData[] = [];
       let match;
@@ -791,7 +791,11 @@ export default function Home() {
   };
 
   const handleLogout = () => {
-    logout({ returnTo: window.location.origin });
+    logout({ 
+      logoutParams: {
+        returnTo: window.location.origin
+      }
+    });
   };
 
   return (
@@ -810,15 +814,18 @@ export default function Home() {
               </svg>
             </div>
             <h1 className="text-xl font-bold text-blue-800">
-              Muscle Analysis AI
+              MuscleAI
             </h1>
           </div>
 
           {/* User Icon and Dropdown */}
           <div className="flex items-center space-x-6">
-            {userInfo.subscription && (
-              <QuotaDisplay compact />
-            )}
+            {/* Only show quota display on medium screens and up */}
+            <div className="hidden md:block">
+              {userInfo.subscription && (
+                <QuotaDisplay compact />
+              )}
+            </div>
             
             {/* Pricing Plans Button - only shown when user has no active subscription */}
             {(!userInfo.subscription ||
@@ -833,22 +840,25 @@ export default function Home() {
                   <img
                     src={userInfo.picture}
                     alt="User"
-                    className="w-10 h-10 rounded-full"
+                    className="w-10 h-10 rounded-full object-cover overflow-hidden"
+                    style={{ aspectRatio: '1/1' }}
                   />
                 ) : (
-                  <svg
-                    className="w-6 h-6 text-white"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                    />
-                  </svg>
+                  <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
+                    <svg
+                      className="w-6 h-6 text-gray-600"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                      />
+                    </svg>
+                  </div>
                 )}
               </button>
 
@@ -919,7 +929,7 @@ export default function Home() {
                     <span>Give Feedback</span>
                   </button>
                   <button
-                    onClick={() => logout({ returnTo: window.location.origin })}
+                    onClick={() => handleLogout()}
                     className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors flex items-center space-x-2"
                   >
                     <svg
