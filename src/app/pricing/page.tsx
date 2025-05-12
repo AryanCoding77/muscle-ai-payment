@@ -100,25 +100,25 @@ export default function PricingPage() {
 
           <div className="container mx-auto px-4 md:px-8 relative z-10">
             <motion.div
-              className="text-center max-w-3xl mx-auto mb-16"
+              className="text-center max-w-3xl mx-auto mb-10 sm:mb-16 px-2"
               initial="hidden"
               whileInView="visible"
               viewport={{ once: true, amount: 0.2 }}
               variants={staggerContainer}
             >
               <motion.h2
-                className="text-4xl md:text-5xl font-bold mb-6"
+                className="text-3xl md:text-5xl font-bold mb-4"
                 variants={fadeIn}
               >
                 Find the right plan that suits
               </motion.h2>
               <motion.h2
-                className="text-4xl md:text-5xl font-bold mb-8"
+                className="text-3xl md:text-5xl font-bold mb-6 sm:mb-8"
                 variants={fadeIn}
               >
                 your needs
               </motion.h2>
-              <motion.p className="text-xl text-gray-300" variants={fadeIn}>
+              <motion.p className="text-lg md:text-xl text-gray-300" variants={fadeIn}>
                 Our wide range of plans ensures that you find the perfect match,
                 giving you the confidence and support you need.
               </motion.p>
@@ -126,7 +126,7 @@ export default function PricingPage() {
 
             {/* Pricing Cards */}
             <motion.div
-              className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto"
+              className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8 max-w-6xl mx-auto"
               initial="hidden"
               whileInView="visible"
               viewport={{ once: true, amount: 0.1 }}
@@ -134,7 +134,7 @@ export default function PricingPage() {
             >
               {/* Starter Plan */}
               <motion.div
-                className="bg-blue-950/20 backdrop-blur-sm border border-blue-800/20 rounded-xl overflow-hidden p-8 relative shadow-[0_0_25px_rgba(30,64,175,0.15)]"
+                className="bg-blue-950/20 backdrop-blur-sm border border-blue-800/20 rounded-xl overflow-hidden p-4 sm:p-8 relative shadow-[0_0_25px_rgba(30,64,175,0.15)]"
                 variants={fadeIn}
                 whileHover={{ y: -5, transition: { duration: 0.2 } }}
               >
@@ -142,10 +142,10 @@ export default function PricingPage() {
                 <div className="absolute -top-24 -left-20 w-40 h-40 bg-blue-500/30 rounded-full filter blur-[50px]"></div>
                 <div className="absolute bottom-10 right-0 w-32 h-32 bg-blue-500/20 rounded-full filter blur-[40px]"></div>
 
-                <div className="flex items-center mb-6">
-                  <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center mr-3 shadow-[0_0_15px_rgba(59,130,246,0.7)]">
+                <div className="flex items-center mb-4 sm:mb-6">
+                  <div className="w-8 h-8 sm:w-10 sm:h-10 bg-blue-600 rounded-full flex items-center justify-center mr-3 shadow-[0_0_15px_rgba(59,130,246,0.7)]">
                     <svg
-                      className="w-5 h-5 text-white"
+                      className="w-4 h-4 sm:w-5 sm:h-5 text-white"
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
@@ -158,29 +158,29 @@ export default function PricingPage() {
                       />
                     </svg>
                   </div>
-                  <h3 className="text-2xl font-bold">Starter</h3>
+                  <h3 className="text-xl sm:text-2xl font-bold">Starter</h3>
                 </div>
 
-                <p className="text-gray-400 mb-6">
+                <p className="text-gray-400 mb-4 sm:mb-6 text-sm sm:text-base">
                   For small teams billed monthly.
                 </p>
 
-                <div className="mb-8">
+                <div className="mb-6 sm:mb-8">
                   <div className="flex items-baseline">
-                    <span className="text-5xl font-bold">$25</span>
-                    <span className="text-gray-400 ml-2">/ per month</span>
+                    <span className="text-4xl sm:text-5xl font-bold">$25</span>
+                    <span className="text-gray-400 ml-2 text-sm sm:text-base">/ per month</span>
                   </div>
                 </div>
 
-                <Link href="/signup" className="block mb-10">
-                  <button className="w-full py-4 rounded-md border border-blue-700/50 bg-blue-900/20 hover:bg-blue-800/30 transition-colors font-medium shadow-[0_0_10px_rgba(59,130,246,0.3)]">
+                <Link href="/signup" className="block mb-8 sm:mb-10">
+                  <button className="w-full py-3 sm:py-4 rounded-md border border-blue-700/50 bg-blue-900/20 hover:bg-blue-800/30 transition-colors font-medium shadow-[0_0_10px_rgba(59,130,246,0.3)] text-sm sm:text-base">
                     Get Started
                   </button>
                 </Link>
 
                 <div>
-                  <h4 className="font-bold mb-6 text-xl">Features:</h4>
-                  <ul className="space-y-4">
+                  <h4 className="font-bold mb-4 sm:mb-6 text-lg sm:text-xl">Features:</h4>
+                  <ul className="space-y-3 sm:space-y-4 text-sm sm:text-base">
                     <li className="flex items-center">
                       <svg
                         className="w-5 h-5 text-blue-500 mr-3"

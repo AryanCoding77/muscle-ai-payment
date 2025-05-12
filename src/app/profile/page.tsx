@@ -126,10 +126,10 @@ export default function ProfilePage() {
                 </Link>
               </div>
 
-              <div className="flex items-center space-x-4">
+              <div className="flex items-center space-x-2 sm:space-x-4">
                 <Link
                   href="/main"
-                  className="px-4 py-2 rounded-lg bg-gray-800 hover:bg-gray-700 transition-colors border border-gray-700 text-sm font-medium"
+                  className="px-3 py-2 sm:px-4 sm:py-2 rounded-lg bg-gray-800 hover:bg-gray-700 transition-colors border border-gray-700 text-xs sm:text-sm font-medium"
                 >
                   Dashboard
                 </Link>
@@ -139,7 +139,7 @@ export default function ProfilePage() {
                       returnTo: window.location.origin
                     }
                   })}
-                  className="px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700 transition-colors text-sm font-medium"
+                  className="px-3 py-2 sm:px-4 sm:py-2 rounded-lg bg-red-600 hover:bg-red-700 transition-colors text-xs sm:text-sm font-medium"
                 >
                   Logout
                 </button>
@@ -148,21 +148,21 @@ export default function ProfilePage() {
           </div>
         </nav>
 
-        <main className="container mx-auto px-4 md:px-8 py-8">
+        <main className="container mx-auto px-4 md:px-8 py-6 sm:py-8">
           <div className="max-w-4xl mx-auto">
-            <h1 className="text-3xl font-bold mb-8">Your Profile</h1>
+            <h1 className="text-2xl sm:text-3xl font-bold mb-6 sm:mb-8">Your Profile</h1>
 
-            <div className="bg-gray-900 rounded-xl p-6 mb-8 border border-gray-800">
-              <div className="flex flex-col md:flex-row items-start md:items-center gap-6">
-                <div className="relative w-24 h-24 rounded-full overflow-hidden bg-gray-800">
+            <div className="bg-gray-900 rounded-xl p-4 sm:p-6 mb-8 border border-gray-800">
+              <div className="flex flex-col md:flex-row items-center md:items-start gap-6">
+                <div className="relative w-24 h-24 rounded-full overflow-hidden bg-gray-800 flex-shrink-0">
                   {renderAvatar()}
                 </div>
 
-                <div className="flex-1">
+                <div className="flex-1 w-full text-center md:text-left">
                   {isEditing ? (
                     <form onSubmit={handleUpdateProfile} className="space-y-4">
                       <div className="flex flex-col md:flex-row gap-6 mb-4">
-                        <div className="relative w-24 h-24 rounded-full overflow-hidden bg-gray-800">
+                        <div className="relative w-24 h-24 rounded-full overflow-hidden bg-gray-800 mx-auto md:mx-0">
                           {previewUrl ? (
                             <Image
                               src={previewUrl}
@@ -188,7 +188,7 @@ export default function ProfilePage() {
                             />
                           )}
                         </div>
-                        <div>
+                        <div className="w-full">
                           <label
                             htmlFor="photo"
                             className="block text-sm text-gray-400 mb-1"
@@ -228,11 +228,11 @@ export default function ProfilePage() {
                         />
                       </div>
 
-                      <div className="flex items-center gap-3">
+                      <div className="flex flex-col sm:flex-row items-center gap-3 justify-center md:justify-start">
                         <button
                           type="submit"
                           disabled={isLoading}
-                          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg disabled:opacity-50 transition-colors"
+                          className="w-full sm:w-auto px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg disabled:opacity-50 transition-colors"
                         >
                           {isLoading ? "Saving..." : "Save Changes"}
                         </button>
@@ -244,27 +244,27 @@ export default function ProfilePage() {
                             setProfilePhoto(null);
                             setPreviewUrl(null);
                           }}
-                          className="px-4 py-2 bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded-lg transition-colors"
+                          className="w-full sm:w-auto mt-2 sm:mt-0 px-4 py-2 bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded-lg transition-colors"
                         >
                           Cancel
                         </button>
                       </div>
 
-                      {error && <p className="text-red-500 text-sm">{error}</p>}
+                      {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
 
                       {successMessage && (
-                        <p className="text-green-500 text-sm">
+                        <p className="text-green-500 text-sm mt-2">
                           {successMessage}
                         </p>
                       )}
                     </form>
                   ) : (
                     <div className="space-y-3">
-                      <h2 className="text-2xl font-bold">
+                      <h2 className="text-xl sm:text-2xl font-bold">
                         {userInfo.name || "User"}
                       </h2>
                       <p className="text-gray-400">{userInfo.email}</p>
-                      <div className="flex items-center gap-6 text-sm text-gray-400">
+                      <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-6 text-sm text-gray-400 justify-center md:justify-start">
                         <div>
                           <span className="block">Member since</span>
                           <span className="text-white">
@@ -281,7 +281,7 @@ export default function ProfilePage() {
 
                       <button
                         onClick={() => setIsEditing(true)}
-                        className="px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg border border-gray-700 text-sm transition-colors mt-2"
+                        className="mt-4 px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg border border-gray-700 text-sm transition-colors"
                       >
                         Edit Profile
                       </button>
