@@ -34,15 +34,27 @@ const PLANS = {
   Ultimate: { price: 14 }
 };
 
+// Define INR conversion rates
+const INR_CONVERSION = {
+  rate: 83.37,
+  symbol: '₹'
+};
+
 export default function PricingPlans() {
   const [isOpen, setIsOpen] = useState(false);
-  // Use USD for all users regardless of location
-  const currency = 'USD';
-  const currencySymbol = '$';
+  const [showInINR, setShowInINR] = useState(false);
+  
+  // Currency display settings
+  const currencySymbol = showInINR ? INR_CONVERSION.symbol : '$';
 
   // Get price for a plan
   const getPriceForPlan = (planName: keyof typeof PLANS) => {
-    return PLANS[planName].price;
+    const basePrice = PLANS[planName].price;
+    if (showInINR) {
+      // Convert to INR and round to 2 decimal places
+      return (basePrice * INR_CONVERSION.rate).toFixed(0);
+    }
+    return basePrice;
   };
 
   const handlePaymentSuccess = () => {
@@ -52,6 +64,10 @@ export default function PricingPlans() {
 
   const handlePaymentFailure = () => {
     toast.error("Payment failed. Please try again.");
+  };
+
+  const toggleCurrency = () => {
+    setShowInINR(!showInINR);
   };
 
   if (!isOpen) {
@@ -82,7 +98,7 @@ export default function PricingPlans() {
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
       <div className="w-full max-w-7xl bg-white dark:bg-gray-900 rounded-xl overflow-y-auto max-h-[90vh]">
         <div className="p-6 md:p-8">
-          <div className="flex justify-between items-center mb-8">
+          <div className="flex justify-between items-center mb-4">
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
               Choose Your Plan
             </h2>
@@ -104,6 +120,29 @@ export default function PricingPlans() {
                 />
               </svg>
             </button>
+          </div>
+          
+          {/* Currency Toggle */}
+          <div className="flex justify-end mb-4">
+            <div className="flex items-center space-x-2">
+              <span className="text-sm text-gray-600 dark:text-gray-400">USD</span>
+              <button 
+                onClick={toggleCurrency}
+                className="relative inline-flex h-6 w-11 items-center rounded-full"
+                aria-pressed={showInINR}
+              >
+                <span className="sr-only">Toggle currency to {showInINR ? 'USD' : 'INR'}</span>
+                <span 
+                  className={`${showInINR ? 'bg-blue-600' : 'bg-gray-300'} 
+                  absolute inset-0 rounded-full transition-colors duration-300`}
+                />
+                <span 
+                  className={`${showInINR ? 'translate-x-6' : 'translate-x-1'} 
+                  inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-300`}
+                />
+              </button>
+              <span className="text-sm text-gray-600 dark:text-gray-400">INR</span>
+            </div>
           </div>
 
           <motion.div
@@ -156,7 +195,7 @@ export default function PricingPlans() {
                 <div className="block mb-6">
                   <RazorpayPayment
                     planName="Starter"
-                    amount={getPriceForPlan('Starter')}
+                    amount={PLANS.Starter.price}
                     onSuccess={handlePaymentSuccess}
                     onFailure={handlePaymentFailure}
                   />
@@ -275,7 +314,7 @@ export default function PricingPlans() {
                 <div className="block mb-6">
                   <RazorpayPayment
                     planName="Pro"
-                    amount={getPriceForPlan('Pro')}
+                    amount={PLANS.Pro.price}
                     onSuccess={handlePaymentSuccess}
                     onFailure={handlePaymentFailure}
                   />
@@ -406,7 +445,7 @@ export default function PricingPlans() {
                 <div className="block mb-6">
                   <RazorpayPayment
                     planName="Ultimate"
-                    amount={getPriceForPlan('Ultimate')}
+                    amount={PLANS.Ultimate.price}
                     onSuccess={handlePaymentSuccess}
                     onFailure={handlePaymentFailure}
                   />
