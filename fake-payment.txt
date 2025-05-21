@@ -1,3 +1,9 @@
+Currency Converter (USD to INR):
+1 USD = 83.37 INR (approx)
+$4/month = ₹333.48/month
+$7/month = ₹583.59/month
+$14/month = ₹1,167.18/month
+
 Card Number: 4111 1111 1111 1111
 Expiry: 12/25
 CVV: 123
