@@ -9,12 +9,28 @@ import {
   Label,
 } from "recharts";
 import type { MuscleData } from "@/types/muscle";
+import { useEffect, useState } from "react";
 
 interface MuscleDistributionChartProps {
   data: MuscleData[];
 }
 
 const MuscleDistributionChart = ({ data }: MuscleDistributionChartProps) => {
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkIfMobile = () => {
+      setIsMobile(window.innerWidth < 640);
+    };
+    
+    checkIfMobile();
+    window.addEventListener('resize', checkIfMobile);
+    
+    return () => {
+      window.removeEventListener('resize', checkIfMobile);
+    };
+  }, []);
+
   // Calculate muscle distribution by strength categories
   const weakMuscles = data.filter((m) => m.rating <= 3).length;
   const moderateMuscles = data.filter(
@@ -22,89 +38,112 @@ const MuscleDistributionChart = ({ data }: MuscleDistributionChartProps) => {
   ).length;
   const strongMuscles = data.filter((m) => m.rating > 6).length;
 
+  // More detailed categorization for better visualization
   const distributionData = [
     { name: "Weak (1-3)", value: weakMuscles, color: "#ef4444" },
-    { name: "Moderate (4-6)", value: moderateMuscles, color: "#eab308" },
-    { name: "Strong (7-10)", value: strongMuscles, color: "#22c55e" },
+    { name: "Moderate (4-6)", value: moderateMuscles, color: "#f59e0b" },
+    { name: "Strong (7-10)", value: strongMuscles, color: "#10b981" },
   ].filter((item) => item.value > 0); // Only include categories that have muscles
 
-  // Custom render label with percentage
-  const renderCustomizedLabel = ({
-    cx,
-    cy,
-    midAngle,
-    innerRadius,
-    outerRadius,
-    percent,
-    index,
-    name,
-  }: any) => {
-    const RADIAN = Math.PI / 180;
-    const radius = 25 + innerRadius + (outerRadius - innerRadius);
-    const x = cx + radius * Math.cos(-midAngle * RADIAN);
-    const y = cy + radius * Math.sin(-midAngle * RADIAN);
-
-    return (
-      <text
-        x={x}
-        y={y}
-        fill={distributionData[index].color}
-        textAnchor={x > cx ? "start" : "end"}
-        dominantBaseline="central"
-        fontWeight="500"
-        fontSize="13"
-      >
-        {`${name}: ${(percent * 100).toFixed(0)}%`}
-      </text>
-    );
+  const CustomTooltip = ({ active, payload, label }: any) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="bg-white p-3 rounded-lg shadow-md border border-gray-200">
+          <p className="font-medium text-gray-900">{payload[0].name}</p>
+          <div className="flex items-center gap-1.5 mt-1">
+            <div
+              className="w-3 h-3 rounded-full"
+              style={{ backgroundColor: payload[0].payload.color }}
+            ></div>
+            <p className="text-sm">
+              <span className="font-semibold">{payload[0].value}</span>{" "}
+              {payload[0].value === 1 ? "muscle" : "muscles"} (
+              {Math.round((payload[0].value / data.length) * 100)}%)
+            </p>
+          </div>
+        </div>
+      );
+    }
+    return null;
   };
 
+  // For small screens, use a simpler card-based display
+  if (isMobile) {
+    return (
+      <div className="w-full h-full flex flex-col">
+        <div className="text-center mb-2 text-sm text-gray-500">Total: {data.length} muscles</div>
+        <div className="flex-1 grid grid-cols-3 gap-2">
+          {distributionData.map((category, index) => (
+            <div 
+              key={index} 
+              className="flex flex-col items-center justify-center rounded-lg p-2 border"
+              style={{ 
+                backgroundColor: `${category.color}15`,
+                borderColor: `${category.color}40` 
+              }}
+            >
+              <div className="text-2xl font-bold mb-1" style={{ color: category.color }}>
+                {category.value}
+              </div>
+              <div className="text-xs text-center" style={{ color: category.color }}>
+                {category.name}
+              </div>
+              <div className="text-xs text-gray-500 mt-1">
+                {Math.round((category.value / data.length) * 100)}%
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  // For larger screens, use the pie chart
   return (
-    <div className="w-full h-[350px] mt-4">
-      <h3 className="text-center text-gray-700 font-medium mb-2">
-        Muscle Distribution
-      </h3>
-      <ResponsiveContainer width="100%" height="90%">
-        <PieChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
+    <div className="w-full h-full flex items-center justify-center">
+      <ResponsiveContainer width="100%" height="100%" minHeight={250}>
+        <PieChart margin={{ top: 5, right: 5, bottom: 5, left: 5 }}>
           <Pie
             data={distributionData}
             cx="50%"
-            cy="50%"
+            cy="45%"
             labelLine={false}
-            label={renderCustomizedLabel}
             outerRadius={90}
-            innerRadius={40}
-            fill="#8884d8"
-            dataKey="value"
+            innerRadius={60}
             paddingAngle={2}
-            cornerRadius={5}
+            dataKey="value"
+            cornerRadius={3}
+            stroke="#fff"
+            strokeWidth={2}
           >
             {distributionData.map((entry, index) => (
               <Cell
                 key={`cell-${index}`}
                 fill={entry.color}
-                stroke="#fff"
-                strokeWidth={2}
+                className="drop-shadow-sm"
               />
             ))}
             <Label
-              value={`${data.length} Muscles`}
+              value={`${data.length}`}
               position="center"
+              className="text-2xl font-bold"
               fill="#333"
-              style={{ fontSize: "16px", fontWeight: "bold" }}
+              dy={-10}
+            />
+            <Label
+              value="Total Muscles"
+              position="centerBottom"
+              className="text-xs"
+              fill="#666"
+              dy={10}
             />
           </Pie>
-          <Tooltip
-            formatter={(value) => [`${value} muscles`, "Count"]}
-            contentStyle={{
-              backgroundColor: "rgba(255, 255, 255, 0.95)",
-              borderRadius: "8px",
-              border: "1px solid #ddd",
-            }}
-          />
+          <Tooltip content={<CustomTooltip />} />
           <Legend
+            layout="horizontal"
             verticalAlign="bottom"
-            height={36}
+            align="center"
+            wrapperStyle={{ paddingTop: "20px" }}
             iconType="circle"
             iconSize={10}
           />
