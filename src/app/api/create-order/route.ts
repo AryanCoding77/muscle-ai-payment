@@ -11,8 +11,7 @@ const razorpay = new Razorpay({
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { amount, planName, userId } = body;
-    const currency = "USD"; // Always use USD
+    const { amount, planName, userId, currency = "USD" } = body;
 
     if (!amount || !planName || !userId) {
       return NextResponse.json(

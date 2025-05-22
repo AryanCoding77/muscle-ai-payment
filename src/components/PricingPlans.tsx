@@ -36,13 +36,17 @@ const PLANS = {
 
 export default function PricingPlans() {
   const [isOpen, setIsOpen] = useState(false);
-  // Use USD for all users regardless of location
-  const currency = 'USD';
-  const currencySymbol = '$';
+  // Add state for currency toggle
+  const [selectedCurrency, setSelectedCurrency] = useState('USD');
+  const currencySymbol = selectedCurrency === 'USD' ? '$' : '₹';
+  const conversionRate = 80; // 1 USD = 80 INR
 
-  // Get price for a plan
+  // Get price for a plan with currency conversion
   const getPriceForPlan = (planName: keyof typeof PLANS) => {
-    return PLANS[planName].price;
+    const usdPrice = PLANS[planName].price;
+    return selectedCurrency === 'USD' 
+      ? usdPrice 
+      : convertCurrency(usdPrice, 'USD', 'INR', conversionRate);
   };
 
   const handlePaymentSuccess = () => {
@@ -52,6 +56,11 @@ export default function PricingPlans() {
 
   const handlePaymentFailure = () => {
     toast.error("Payment failed. Please try again.");
+  };
+
+  // Toggle currency function
+  const toggleCurrency = () => {
+    setSelectedCurrency(prev => prev === 'USD' ? 'INR' : 'USD');
   };
 
   if (!isOpen) {
@@ -86,24 +95,49 @@ export default function PricingPlans() {
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
               Choose Your Plan
             </h2>
-            <button
-              onClick={() => setIsOpen(false)}
-              className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-            >
-              <svg
-                className="w-6 h-6 text-gray-500 dark:text-gray-400"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
+            <div className="flex items-center">
+              {/* Currency Toggle Button */}
+              <div className="mr-4 flex items-center bg-gray-100 dark:bg-gray-800 rounded-full p-1">
+                <button
+                  onClick={() => setSelectedCurrency('USD')}
+                  className={`rounded-full px-3 py-1 text-sm font-medium transition-colors ${
+                    selectedCurrency === 'USD'
+                      ? 'bg-blue-500 text-white'
+                      : 'text-gray-700 dark:text-gray-300'
+                  }`}
+                >
+                  USD
+                </button>
+                <button
+                  onClick={() => setSelectedCurrency('INR')}
+                  className={`rounded-full px-3 py-1 text-sm font-medium transition-colors ${
+                    selectedCurrency === 'INR'
+                      ? 'bg-blue-500 text-white'
+                      : 'text-gray-700 dark:text-gray-300'
+                  }`}
+                >
+                  INR
+                </button>
+              </div>
+              <button
+                onClick={() => setIsOpen(false)}
+                className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M6 18L18 6M6 6l12 12"
-                />
-              </svg>
-            </button>
+                <svg
+                  className="w-6 h-6 text-gray-500 dark:text-gray-400"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              </button>
+            </div>
           </div>
 
           <motion.div
@@ -159,6 +193,7 @@ export default function PricingPlans() {
                     amount={getPriceForPlan('Starter')}
                     onSuccess={handlePaymentSuccess}
                     onFailure={handlePaymentFailure}
+                    currency={selectedCurrency}
                   />
                 </div>
 
@@ -278,6 +313,7 @@ export default function PricingPlans() {
                     amount={getPriceForPlan('Pro')}
                     onSuccess={handlePaymentSuccess}
                     onFailure={handlePaymentFailure}
+                    currency={selectedCurrency}
                   />
                 </div>
 
@@ -409,6 +445,7 @@ export default function PricingPlans() {
                     amount={getPriceForPlan('Ultimate')}
                     onSuccess={handlePaymentSuccess}
                     onFailure={handlePaymentFailure}
+                    currency={selectedCurrency}
                   />
                 </div>
 
