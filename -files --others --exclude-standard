@@ -1,0 +1,5 @@
+warning: in the working copy of 'src/app/main/page.tsx', LF will be replaced by CRLF the next time Git touches it
+M	src/app/main/page.tsx
+M	src/components/MuscleBarChart.tsx
+M	src/components/MuscleDistributionChart.tsx
+M	src/components/MuscleRadarChart.tsx
