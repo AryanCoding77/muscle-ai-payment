@@ -814,14 +814,8 @@ export default function Home() {
         {/* Proper header with app title and user menu */}
         <header className="bg-white border-b border-gray-200 py-4 px-4 flex items-center justify-between shadow-sm">
           <div className="flex items-center">
-            <div className="w-8 h-8 bg-gradient-to-br from-cyan-400 via-blue-500 to-blue-600 rounded-2xl flex items-center justify-center mr-3">
-              <svg
-                className="w-5 h-5 text-white"
-                viewBox="0 0 24 24"
-                fill="currentColor"
-              >
-                <path d="M20.5 11.5h-1.8v-4h1.8c.6 0 1-.4 1-1s-.4-1-1-1h-2.6c-.1-1.3-.7-2.4-1.8-3.2-.4-.3-1.1-.2-1.4.2-.3.4-.2 1.1.2 1.4.6.4.9 1 .9 1.7v11.9c0 .7-.3 1.3-.9 1.7-.4.3-.5.9-.2 1.4.2.3.5.4.8.4.2 0 .4-.1.6-.2 1.1-.8 1.7-1.9 1.8-3.2h2.6c.6 0 1-.4 1-1s-.4-1-1-1h-1.8v-4h1.8c.6 0 1-.4 1-1s-.4-1-1-1zM3.5 11.5h1.8v-4H3.5c-.6 0-1 .4-1 1s.4 1 1 1h1.8v4H3.5c-.6 0-1 .4-1 1s.4 1 1 1h2.6c.1 1.3.7 2.4 1.8 3.2.2.1.4.2.6.2.3 0 .6-.1.8-.4.3-.4.2-1.1-.2-1.4-.6-.4-.9-1-.9-1.7V7.5c0-.7.3-1.3.9-1.7.4-.3.5-.9.2-1.4-.3-.4-.9-.5-1.4-.2-1.1.8-1.7 1.9-1.8 3.2H3.5c-.6 0-1 .4-1 1s.4 1 1 1z" />
-              </svg>
+            <div className="w-8 h-8 mr-3">
+              <img src="/muscle-logo.svg" alt="MuscleAI Logo" className="w-full h-full" />
             </div>
             <h1 className="text-xl font-bold text-blue-800">
               MuscleAI
@@ -1231,9 +1225,38 @@ export default function Home() {
 
             {analysis && parsedMuscles.length > 0 && (
               <div className="mt-8 w-full max-w-6xl">
-                <h2 className="text-2xl font-semibold mb-4 text-blue-800">
-                  Muscle Analysis Results
-                </h2>
+                <div className="flex justify-between items-center mb-4">
+                  <h2 className="text-2xl font-semibold text-blue-800">
+                    Muscle Analysis Results
+                  </h2>
+                  
+                  <button 
+                    onClick={() => {
+                      // Store analysis data in localStorage
+                      const analysisData = {
+                        parsedMuscles,
+                        analysis,
+                        nonVisibleMuscles,
+                        timestamp: Date.now(),
+                        id: `analysis-${Date.now()}`
+                      };
+                      
+                      // Save to localStorage
+                      localStorage.setItem(`analysis-${Date.now()}`, JSON.stringify(analysisData));
+                      
+                      // Create a shareable link with analysis ID
+                      const shareableLink = `${window.location.origin}/shared-analysis?id=analysis-${Date.now()}`;
+                      navigator.clipboard.writeText(shareableLink);
+                      toast.success("Link copied to clipboard!");
+                    }}
+                    className="flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-sm"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+                    </svg>
+                    Share Results
+                  </button>
+                </div>
 
                 {/* Visibility note */}
                 <div className="mb-6 p-4 bg-blue-50 rounded-lg border-l-4 border-l-blue-500 shadow-sm">
