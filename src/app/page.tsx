@@ -2312,10 +2312,10 @@ export default function HomePage() {
                     <h4 className="font-semibold mb-4">Features:</h4>
                     <ul className="space-y-4">
                       {[
-                        "Financial Workflows",
-                        "Analytics & Reporting",
-                        "24/7 Customer Support",
-                        "Secure Transactions",
+                        "Basic muscle analysis",
+                        "5 analyses per month",
+                        "Workout recommendations",
+                        "Email support"
                       ].map((feature, index) => (
                         <motion.li
                           key={index}
@@ -2439,10 +2439,10 @@ export default function HomePage() {
                     <h4 className="font-semibold mb-4">Features:</h4>
                     <ul className="space-y-4">
                       {[
-                        "Financial Workflows",
-                        "Analytics & Reporting",
-                        "24/7 Customer Support",
-                        "Secure Transactions",
+                        "Advanced muscle analysis",
+                        "20 analyses per month",
+                        "Workout recommendations",
+                        "Email support"
                       ].map((feature, index) => (
                         <motion.li
                           key={index}
@@ -2557,10 +2557,10 @@ export default function HomePage() {
                     <h4 className="font-semibold mb-4">Features:</h4>
                     <ul className="space-y-4">
                       {[
-                        "Financial Workflows",
-                        "Analytics & Reporting",
-                        "24/7 Customer Support",
-                        "Secure Transactions",
+                        "Premium muscle analysis",
+                        "100 analyses per month",
+                        "Workout recommendations",
+                        "Email support",
                       ].map((feature, index) => (
                         <motion.li
                           key={index}
