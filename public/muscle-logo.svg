@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 200 200">
+  <!-- Blue gradient background -->
+  <defs>
+    <linearGradient id="blueGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#22c1c3" />
+      <stop offset="50%" style="stop-color:#2980b9" />
+      <stop offset="100%" style="stop-color:#3a47d5" />
+    </linearGradient>
+    <clipPath id="roundedRect">
+      <rect x="0" y="0" width="200" height="200" rx="50" ry="50" />
+    </clipPath>
+  </defs>
+  
+  <!-- Rounded rectangle with gradient -->
+  <rect x="0" y="0" width="200" height="200" rx="50" ry="50" fill="url(#blueGradient)" />
+  
+  <!-- Dumbbell icon -->
+  <path d="M150,100 h-100 M40,80 v40 M160,80 v40 M50,70 v60 M150,70 v60" stroke="white" stroke-width="18" stroke-linecap="round" />
+  
+  <!-- Dumbbell weights -->
+  <circle cx="40" cy="100" r="20" fill="white" />
+  <circle cx="160" cy="100" r="20" fill="white" />
+</svg> 

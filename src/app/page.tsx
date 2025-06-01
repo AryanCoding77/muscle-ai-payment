@@ -88,6 +88,19 @@ export default function HomePage() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [currency, setCurrency] = useState("USD"); // Add currency state
+
+  // USD to INR conversion rate
+  const exchangeRate = 83.5; // 1 USD = 83.5 INR
+
+  // Function to convert price based on selected currency
+  const convertPrice = (usdPrice: number) => {
+    if (currency === "USD") {
+      return `$${usdPrice}`;
+    } else {
+      return `₹${Math.round(usdPrice * exchangeRate)}`;
+    }
+  };
 
   // Transform navbar background opacity based on scroll position
   const navbarBgOpacity = useTransform(scrollY, [0, 50], [0, 1]);
@@ -2191,6 +2204,32 @@ export default function HomePage() {
               Our wide range of plans ensures that you find the perfect match,
               giving you the confidence and support you need.
             </motion.p>
+            
+            {/* Currency Toggle */}
+            <div className="flex justify-center mt-6">
+              <div className="bg-gray-800 rounded-full p-1 inline-flex">
+                <button
+                  className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                    currency === "USD"
+                      ? "bg-blue-600 text-white"
+                      : "text-gray-300 hover:text-white"
+                  }`}
+                  onClick={() => setCurrency("USD")}
+                >
+                  USD
+                </button>
+                <button
+                  className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                    currency === "INR"
+                      ? "bg-blue-600 text-white"
+                      : "text-gray-300 hover:text-white"
+                  }`}
+                  onClick={() => setCurrency("INR")}
+                >
+                  INR
+                </button>
+              </div>
+            </div>
           </motion.div>
 
           {/* Pricing Cards */}
@@ -2240,7 +2279,7 @@ export default function HomePage() {
                         whileInView={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.2 }}
                       >
-                        $25
+                        {convertPrice(4)}
                       </motion.span>
                       <span className="text-gray-400 ml-2">/ per month</span>
                     </div>
@@ -2258,6 +2297,7 @@ export default function HomePage() {
                     className="w-full py-3 rounded-md border border-gray-700 hover:bg-gray-800 transition-colors mb-6 relative overflow-hidden group"
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
+                    onClick={() => router.push("/main")}
                   >
                     <span className="relative z-10">Get Started</span>
                     <motion.div
@@ -2272,10 +2312,10 @@ export default function HomePage() {
                     <h4 className="font-semibold mb-4">Features:</h4>
                     <ul className="space-y-4">
                       {[
-                        "Financial Workflows",
-                        "Analytics & Reporting",
-                        "24/7 Customer Support",
-                        "Secure Transactions",
+                        "Basic muscle analysis",
+                        "5 analyses per month",
+                        "Workout recommendations",
+                        "Email support"
                       ].map((feature, index) => (
                         <motion.li
                           key={index}
@@ -2352,7 +2392,7 @@ export default function HomePage() {
                         />
                       </svg>
                     </div>
-                    <h3 className="text-xl font-bold">Enterprise</h3>
+                    <h3 className="text-xl font-bold">Pro</h3>
                   </div>
                   <p className="text-gray-400 text-sm mb-6">
                     For growing startups billed monthly.
@@ -2366,7 +2406,7 @@ export default function HomePage() {
                         whileInView={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.2 }}
                       >
-                        $60
+                        {convertPrice(7)}
                       </motion.span>
                       <span className="text-gray-400 ml-2">/ per month</span>
                     </div>
@@ -2384,6 +2424,7 @@ export default function HomePage() {
                     className="w-full py-3 rounded-md bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white transition-all mb-6 relative overflow-hidden shadow-lg shadow-purple-500/20"
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
+                    onClick={() => router.push("/main")}
                   >
                     <span className="relative z-10">Get Started</span>
                     <motion.div
@@ -2398,10 +2439,10 @@ export default function HomePage() {
                     <h4 className="font-semibold mb-4">Features:</h4>
                     <ul className="space-y-4">
                       {[
-                        "Financial Workflows",
-                        "Analytics & Reporting",
-                        "24/7 Customer Support",
-                        "Secure Transactions",
+                        "Advanced muscle analysis",
+                        "20 analyses per month",
+                        "Workout recommendations",
+                        "Email support"
                       ].map((feature, index) => (
                         <motion.li
                           key={index}
@@ -2469,7 +2510,7 @@ export default function HomePage() {
                         />
                       </svg>
                     </div>
-                    <h3 className="text-xl font-bold">Business</h3>
+                    <h3 className="text-xl font-bold">Ultimate</h3>
                   </div>
                   <p className="text-gray-400 text-sm mb-6">
                     For large companies billed monthly.
@@ -2483,7 +2524,7 @@ export default function HomePage() {
                         whileInView={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.2 }}
                       >
-                        $90
+                        {convertPrice(14)}
                       </motion.span>
                       <span className="text-gray-400 ml-2">/ per month</span>
                     </div>
@@ -2501,6 +2542,7 @@ export default function HomePage() {
                     className="w-full py-3 rounded-md border border-gray-700 hover:bg-gray-800 transition-colors mb-6 relative overflow-hidden group"
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
+                    onClick={() => router.push("/main")}
                   >
                     <span className="relative z-10">Get Started</span>
                     <motion.div
@@ -2515,10 +2557,10 @@ export default function HomePage() {
                     <h4 className="font-semibold mb-4">Features:</h4>
                     <ul className="space-y-4">
                       {[
-                        "Financial Workflows",
-                        "Analytics & Reporting",
-                        "24/7 Customer Support",
-                        "Secure Transactions",
+                        "Premium muscle analysis",
+                        "100 analyses per month",
+                        "Workout recommendations",
+                        "Email support",
                       ].map((feature, index) => (
                         <motion.li
                           key={index}
@@ -2763,6 +2805,12 @@ export default function HomePage() {
                 className="text-gray-500 hover:text-white transition-colors text-sm"
               >
                 Privacy Policy
+              </Link>
+              <Link
+                href="/refund"
+                className="text-gray-500 hover:text-white transition-colors text-sm"
+              >
+                Refund & Cancellation Policy
               </Link>
             </div>
           </div>

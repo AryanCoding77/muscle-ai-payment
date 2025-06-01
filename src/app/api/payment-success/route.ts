@@ -33,7 +33,8 @@ export async function POST(request: Request) {
       razorpayOrderId,
       razorpaySignature, 
       startDate, 
-      endDate 
+      endDate,
+      currency = "USD" 
     } = body;
 
     console.log("Payment success request:", {
@@ -43,6 +44,7 @@ export async function POST(request: Request) {
       razorpayPaymentId,
       razorpayOrderId,
       razorpaySignature,
+      currency
     });
 
     if (!userId || !planName || !amount || !razorpayPaymentId || !razorpayOrderId || !razorpaySignature) {
@@ -166,7 +168,7 @@ export async function POST(request: Request) {
         razorpay_payment_id: razorpayPaymentId,
         razorpay_order_id: razorpayOrderId,
         amount: amount,
-        currency: body.currency || "INR",
+        currency: currency,
         status: "success",
         payment_date: new Date().toISOString(),
         verified: true,

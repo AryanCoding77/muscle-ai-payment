@@ -17,6 +17,7 @@ interface RazorpayPaymentProps {
   amount: number;
   onSuccess: () => void;
   onFailure: () => void;
+  currency: string;
 }
 
 export default function RazorpayPayment({
@@ -24,11 +25,11 @@ export default function RazorpayPayment({
   amount,
   onSuccess,
   onFailure,
+  currency = "USD", // Default to USD if not provided
 }: RazorpayPaymentProps) {
   const { userInfo } = useUser();
   const { user } = useAuth0();
   const [isProcessing, setIsProcessing] = useState(false);
-  const currency = "USD"; // Always use USD
 
   const saveSubscription = async (response: any) => {
     setIsProcessing(true);
@@ -165,7 +166,7 @@ export default function RazorpayPayment({
           amount,
           planName,
           userId: user?.sub, // Add user ID for later verification
-          currency: currency, // Pass the currency
+          currency, // Pass the currency from the props
         }),
       });
 
