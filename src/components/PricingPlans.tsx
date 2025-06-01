@@ -182,7 +182,7 @@ export default function PricingPlans() {
                       {currencySymbol}{getPriceForPlan('Starter')}
                     </span>
                     <span className="text-gray-500 dark:text-gray-400 ml-2 text-sm">
-                      one-time
+                      pay once
                     </span>
                   </div>
                 </div>
@@ -302,7 +302,7 @@ export default function PricingPlans() {
                       {currencySymbol}{getPriceForPlan('Pro')}
                     </span>
                     <span className="text-gray-500 dark:text-gray-400 ml-2 text-sm">
-                      one-time
+                      pay once
                     </span>
                   </div>
                 </div>
@@ -434,7 +434,7 @@ export default function PricingPlans() {
                       {currencySymbol}{getPriceForPlan('Ultimate')}
                     </span>
                     <span className="text-gray-500 dark:text-gray-400 ml-2 text-sm">
-                      one-time
+                      pay once
                     </span>
                   </div>
                 </div>

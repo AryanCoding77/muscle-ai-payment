@@ -91,7 +91,7 @@ export default function HomePage() {
   const [currency, setCurrency] = useState("USD"); // Add currency state
 
   // USD to INR conversion rate
-  const exchangeRate = 83.5; // 1 USD = 83.5 INR
+  const exchangeRate = 80; // 1 USD = 80 INR (adjusted to match requested INR prices)
 
   // Function to convert price based on selected currency
   const convertPrice = (usdPrice: number) => {
@@ -2268,7 +2268,7 @@ export default function HomePage() {
                     <h3 className="text-xl font-bold">Starter</h3>
                   </div>
                   <p className="text-gray-400 text-sm mb-6">
-                    For small teams billed monthly.
+                    For individuals starting their fitness journey.
                   </p>
 
                   <div className="mb-6 relative">
@@ -2281,7 +2281,7 @@ export default function HomePage() {
                       >
                         {convertPrice(4)}
                       </motion.span>
-                      <span className="text-gray-400 ml-2">one-time</span>
+                      <span className="text-gray-400 ml-2">pay once</span>
                     </div>
                     <motion.div
                       className="absolute -inset-1 bg-blue-500/10 rounded-lg blur-sm"
@@ -2395,7 +2395,7 @@ export default function HomePage() {
                     <h3 className="text-xl font-bold">Pro</h3>
                   </div>
                   <p className="text-gray-400 text-sm mb-6">
-                    For growing startups billed monthly.
+                    For dedicated fitness enthusiasts.
                   </p>
 
                   <div className="mb-6 relative">
@@ -2408,7 +2408,7 @@ export default function HomePage() {
                       >
                         {convertPrice(7)}
                       </motion.span>
-                      <span className="text-gray-400 ml-2">one-time</span>
+                      <span className="text-gray-400 ml-2">pay once</span>
                     </div>
                     <motion.div
                       className="absolute -inset-1 bg-purple-500/10 rounded-lg blur-sm"
@@ -2513,7 +2513,7 @@ export default function HomePage() {
                     <h3 className="text-xl font-bold">Ultimate</h3>
                   </div>
                   <p className="text-gray-400 text-sm mb-6">
-                    For large companies billed monthly.
+                    For professional fitness trainers.
                   </p>
 
                   <div className="mb-6 relative">
@@ -2526,7 +2526,7 @@ export default function HomePage() {
                       >
                         {convertPrice(14)}
                       </motion.span>
-                      <span className="text-gray-400 ml-2">one-time</span>
+                      <span className="text-gray-400 ml-2">pay once</span>
                     </div>
                     <motion.div
                       className="absolute -inset-1 bg-emerald-500/10 rounded-lg blur-sm"

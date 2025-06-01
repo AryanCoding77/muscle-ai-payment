@@ -162,13 +162,13 @@ export default function PricingPage() {
                 </div>
 
                 <p className="text-gray-400 mb-4 sm:mb-6 text-sm sm:text-base">
-                  For small teams billed monthly.
+                  For individuals starting their fitness journey.
                 </p>
 
                 <div className="mb-6 sm:mb-8">
                   <div className="flex items-baseline">
-                    <span className="text-4xl sm:text-5xl font-bold">$25</span>
-                    <span className="text-gray-400 ml-2 text-sm sm:text-base">one-time</span>
+                    <span className="text-4xl sm:text-5xl font-bold">$4</span>
+                    <span className="text-gray-400 ml-2 text-sm sm:text-base">pay once</span>
                   </div>
                 </div>
 
@@ -292,13 +292,13 @@ export default function PricingPage() {
                 </div>
 
                 <p className="text-gray-400 mb-6">
-                  For growing startups billed monthly.
+                  For dedicated fitness enthusiasts.
                 </p>
 
                 <div className="mb-8">
                   <div className="flex items-baseline">
-                    <span className="text-5xl font-bold">$60</span>
-                    <span className="text-gray-400 ml-2">one-time</span>
+                    <span className="text-5xl font-bold">$7</span>
+                    <span className="text-gray-400 ml-2">pay once</span>
                   </div>
                 </div>
 
@@ -415,13 +415,13 @@ export default function PricingPage() {
                 </div>
 
                 <p className="text-gray-400 mb-6">
-                  For large companies billed monthly.
+                  For professional fitness trainers.
                 </p>
 
                 <div className="mb-8">
                   <div className="flex items-baseline">
-                    <span className="text-5xl font-bold">$120</span>
-                    <span className="text-gray-400 ml-2">one-time</span>
+                    <span className="text-5xl font-bold">$14</span>
+                    <span className="text-gray-400 ml-2">pay once</span>
                   </div>
                 </div>
 
