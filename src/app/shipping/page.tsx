@@ -34,7 +34,7 @@ export default function ShippingPolicy() {
           </p>
           <p>
             Digital products include access to our AI analysis tools,
-            personalized fitness reports, and subscription services.
+            personalized fitness reports, and one-time payment services.
           </p>
           <p>
             No physical shipping is involved for digital products. Access is

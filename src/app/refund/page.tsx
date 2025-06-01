@@ -37,18 +37,18 @@ export default function RefundPolicy() {
             <li>Dissatisfaction with the service</li>
             <li>Technical issues beyond our control</li>
             <li>Change of mind or accidental purchases</li>
-            <li>Unused subscription time</li>
+            <li>Unused analysis credits</li>
           </ul>
 
           <h2 className="text-2xl font-bold mt-8 mb-4">No Cancellation Policy</h2>
           <p>
-            We do not offer cancellations for subscriptions at Muscle AI. When
-            you subscribe to our service, you are committing to the full
-            subscription period.
+            We do not offer cancellations for purchases at Muscle AI. When
+            you make a payment for our service, you are committing to the full
+            purchase.
           </p>
           <p>
-            Subscriptions will automatically renew at the end of each billing
-            cycle unless you choose not to renew for the next period.
+            All purchases are one-time payments that provide access to the specified
+            number of analyses. There are no automatic renewals.
           </p>
 
           <h2 className="text-2xl font-bold mt-8 mb-4">Contact Us</h2>

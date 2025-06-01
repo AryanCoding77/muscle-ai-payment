@@ -168,7 +168,7 @@ export default function PricingPage() {
                 <div className="mb-6 sm:mb-8">
                   <div className="flex items-baseline">
                     <span className="text-4xl sm:text-5xl font-bold">$25</span>
-                    <span className="text-gray-400 ml-2 text-sm sm:text-base">/ per month</span>
+                    <span className="text-gray-400 ml-2 text-sm sm:text-base">one-time</span>
                   </div>
                 </div>
 
@@ -298,7 +298,7 @@ export default function PricingPage() {
                 <div className="mb-8">
                   <div className="flex items-baseline">
                     <span className="text-5xl font-bold">$60</span>
-                    <span className="text-gray-400 ml-2">/ per month</span>
+                    <span className="text-gray-400 ml-2">one-time</span>
                   </div>
                 </div>
 
@@ -420,8 +420,8 @@ export default function PricingPage() {
 
                 <div className="mb-8">
                   <div className="flex items-baseline">
-                    <span className="text-5xl font-bold">$90</span>
-                    <span className="text-gray-400 ml-2">/ per month</span>
+                    <span className="text-5xl font-bold">$120</span>
+                    <span className="text-gray-400 ml-2">one-time</span>
                   </div>
                 </div>
 

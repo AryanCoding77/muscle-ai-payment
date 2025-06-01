@@ -182,7 +182,7 @@ export default function PricingPlans() {
                       {currencySymbol}{getPriceForPlan('Starter')}
                     </span>
                     <span className="text-gray-500 dark:text-gray-400 ml-2 text-sm">
-                      / month
+                      one-time
                     </span>
                   </div>
                 </div>
@@ -235,7 +235,7 @@ export default function PricingPlans() {
                         />
                       </svg>
                       <span className="text-gray-600 dark:text-gray-300">
-                        5 analyses per month
+                        5 analyses
                       </span>
                     </li>
                     <li className="flex items-center">
@@ -302,7 +302,7 @@ export default function PricingPlans() {
                       {currencySymbol}{getPriceForPlan('Pro')}
                     </span>
                     <span className="text-gray-500 dark:text-gray-400 ml-2 text-sm">
-                      / month
+                      one-time
                     </span>
                   </div>
                 </div>
@@ -355,7 +355,7 @@ export default function PricingPlans() {
                         />
                       </svg>
                       <span className="text-gray-600 dark:text-gray-300">
-                        20 analyses per month
+                        20 analyses
                       </span>
                     </li>
                     <li className="flex items-center">
@@ -434,7 +434,7 @@ export default function PricingPlans() {
                       {currencySymbol}{getPriceForPlan('Ultimate')}
                     </span>
                     <span className="text-gray-500 dark:text-gray-400 ml-2 text-sm">
-                      / month
+                      one-time
                     </span>
                   </div>
                 </div>
@@ -487,7 +487,7 @@ export default function PricingPlans() {
                         />
                       </svg>
                       <span className="text-gray-600 dark:text-gray-300">
-                        100 analyses per month
+                        100 analyses
                       </span>
                     </li>
                     <li className="flex items-center">

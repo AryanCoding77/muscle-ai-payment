@@ -2281,7 +2281,7 @@ export default function HomePage() {
                       >
                         {convertPrice(4)}
                       </motion.span>
-                      <span className="text-gray-400 ml-2">/ per month</span>
+                      <span className="text-gray-400 ml-2">one-time</span>
                     </div>
                     <motion.div
                       className="absolute -inset-1 bg-blue-500/10 rounded-lg blur-sm"
@@ -2313,7 +2313,7 @@ export default function HomePage() {
                     <ul className="space-y-4">
                       {[
                         "Basic muscle analysis",
-                        "5 analyses per month",
+                        "5 analyses",
                         "Workout recommendations",
                         "Email support"
                       ].map((feature, index) => (
@@ -2408,7 +2408,7 @@ export default function HomePage() {
                       >
                         {convertPrice(7)}
                       </motion.span>
-                      <span className="text-gray-400 ml-2">/ per month</span>
+                      <span className="text-gray-400 ml-2">one-time</span>
                     </div>
                     <motion.div
                       className="absolute -inset-1 bg-purple-500/10 rounded-lg blur-sm"
@@ -2440,7 +2440,7 @@ export default function HomePage() {
                     <ul className="space-y-4">
                       {[
                         "Advanced muscle analysis",
-                        "20 analyses per month",
+                        "20 analyses",
                         "Workout recommendations",
                         "Email support"
                       ].map((feature, index) => (
@@ -2526,7 +2526,7 @@ export default function HomePage() {
                       >
                         {convertPrice(14)}
                       </motion.span>
-                      <span className="text-gray-400 ml-2">/ per month</span>
+                      <span className="text-gray-400 ml-2">one-time</span>
                     </div>
                     <motion.div
                       className="absolute -inset-1 bg-emerald-500/10 rounded-lg blur-sm"
@@ -2558,9 +2558,9 @@ export default function HomePage() {
                     <ul className="space-y-4">
                       {[
                         "Premium muscle analysis",
-                        "100 analyses per month",
-                        "Workout recommendations",
-                        "Email support",
+                        "100 analyses",
+                        "24/7 support",
+                        "Custom workout plans"
                       ].map((feature, index) => (
                         <motion.li
                           key={index}
