@@ -462,12 +462,6 @@ export default function CustomersPage() {
 
               <div className="flex space-x-6">
                 <Link
-                  href="/about"
-                  className="text-gray-400 hover:text-white transition-colors"
-                >
-                  About
-                </Link>
-                <Link
                   href="/customers"
                   className="text-gray-400 hover:text-white transition-colors"
                 >
