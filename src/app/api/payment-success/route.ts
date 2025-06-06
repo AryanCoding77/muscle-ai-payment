@@ -34,7 +34,8 @@ export async function POST(request: Request) {
       razorpaySignature, 
       startDate, 
       endDate,
-      currency = "USD" 
+      currency = "USD",
+      referralCode = null
     } = body;
 
     console.log("Payment success request:", {
@@ -44,7 +45,8 @@ export async function POST(request: Request) {
       razorpayPaymentId,
       razorpayOrderId,
       razorpaySignature,
-      currency
+      currency,
+      referralCode
     });
 
     if (!userId || !planName || !amount || !razorpayPaymentId || !razorpayOrderId || !razorpaySignature) {
@@ -172,6 +174,7 @@ export async function POST(request: Request) {
         status: "success",
         payment_date: new Date().toISOString(),
         verified: true,
+        referral_code: referralCode,
       };
 
       console.log("Attempting to record transaction:", transactionData);

@@ -24,6 +24,7 @@ export async function POST(req: NextRequest) {
       paymentId,
       amount,
       currency,
+      referralCode = null,
     } = body;
 
     console.log("Create subscription request:", {
@@ -31,6 +32,7 @@ export async function POST(req: NextRequest) {
       planName,
       amount,
       paymentId,
+      referralCode,
     });
 
     // Validate required fields
@@ -191,6 +193,7 @@ export async function POST(req: NextRequest) {
           currency: currency || "INR",
           status: "success",
           payment_date: new Date().toISOString(),
+          referral_code: referralCode,
         };
 
         console.log("Attempting to record transaction:", transactionData);

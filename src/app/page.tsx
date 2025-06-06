@@ -10,6 +10,8 @@ import {
 import Image from "next/image";
 import Link from "next/link";
 import { useState, useEffect, ReactNode } from "react";
+import { getReferralFromUrl, saveReferral } from "@/utils/referral";
+import { toast } from "react-hot-toast";
 
 const fadeIn = {
   hidden: { opacity: 0, y: 20 },
@@ -89,6 +91,28 @@ export default function HomePage() {
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [currency, setCurrency] = useState("USD"); // Add currency state
+
+  // Check for referral parameter in URL
+  useEffect(() => {
+    const referralCode = getReferralFromUrl();
+    if (referralCode) {
+      saveReferral(referralCode);
+      console.log(`Referral tracked: ${referralCode}`);
+      
+      // Show a toast notification
+      toast.success(`Welcome from ${referralCode}!`, {
+        duration: 3000,
+        position: 'bottom-center',
+        style: {
+          background: '#4B5563',
+          color: '#fff',
+          borderRadius: '10px',
+          padding: '16px',
+        },
+        icon: '🎉',
+      });
+    }
+  }, []);
 
   // USD to INR conversion rate
   const exchangeRate = 80; // 1 USD = 80 INR (adjusted to match requested INR prices)

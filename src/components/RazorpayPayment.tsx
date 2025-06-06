@@ -5,6 +5,7 @@ import Script from "next/script";
 import { useUser } from "@/context/UserContext";
 import { useAuth0 } from "@auth0/auth0-react";
 import { toast } from "react-hot-toast";
+import { getSavedReferral } from "@/utils/referral";
 
 declare global {
   interface Window {
@@ -43,6 +44,9 @@ export default function RazorpayPayment({
     const endDate = new Date();
     endDate.setDate(today.getDate() + 30); // 30 days subscription
 
+    // Get referral code if exists
+    const referralCode = getSavedReferral();
+
     // First, check if the database has the subscription plans
     try {
       console.log("Checking and initializing database plans...");
@@ -74,6 +78,7 @@ export default function RazorpayPayment({
           startDate: today.toISOString(),
           endDate: endDate.toISOString(),
           currency: currency,
+          referralCode: referralCode || null, // Include referral code if available
         }),
       });
 
@@ -94,6 +99,7 @@ export default function RazorpayPayment({
             amount,
             paymentId: response.razorpay_payment_id,
             currency: currency,
+            referralCode: referralCode || null, // Include referral code if available
           }),
         });
 
@@ -149,6 +155,9 @@ export default function RazorpayPayment({
         // Continue anyway as this is just a precaution
       }
 
+      // Get referral code if exists
+      const referralCode = getSavedReferral();
+
       // Fetch Razorpay key
       const keyResponse = await fetch("/api/get-razorpay-key");
       if (!keyResponse.ok) {
@@ -167,6 +176,7 @@ export default function RazorpayPayment({
           planName,
           userId: user?.sub, // Add user ID for later verification
           currency, // Pass the currency from the props
+          referralCode: referralCode || null, // Include referral code if available
         }),
       });
 

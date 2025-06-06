@@ -11,7 +11,7 @@ const razorpay = new Razorpay({
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { amount, planName, userId, currency = "USD" } = body;
+    const { amount, planName, userId, currency = "USD", referralCode = null } = body;
 
     if (!amount || !planName || !userId) {
       return NextResponse.json(
@@ -27,6 +27,7 @@ export async function POST(request: Request) {
       notes: {
         planName: planName,
         userId: userId,
+        referralCode: referralCode || "direct", // Include referral info in Razorpay notes
       },
     });
 
@@ -40,6 +41,7 @@ export async function POST(request: Request) {
           plan_name: planName,
           amount: amount,
           currency: order.currency,
+          referral_code: referralCode, // Store referral code in the database
         },
       ])
       .select()
