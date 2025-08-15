@@ -2015,18 +2015,18 @@ export default function HomePage() {
             className="text-center mb-16"
           >
             <motion.h2
-              className="text-5xl md:text-6xl font-bold mb-6"
+              className="text-5xl md:text-6xl font-bold mb-12 flex flex-col items-center justify-center gap-4"
               variants={fadeIn}
             >
-              Coding courses are designed for
-            </motion.h2>
-            <motion.h2
-              className="text-5xl md:text-6xl font-bold mb-12 flex items-center justify-center gap-4 flex-wrap"
-              variants={fadeIn}
-            >
-              <span className="text-pink-400 italic">software engineers</span>
-              <span>not</span>
-              <span className="text-emerald-400 italic">entrepreneurs</span>
+              <div className="flex items-center gap-4">
+                <span className="text-white">What happens when your </span>
+                <span className="text-pink-400 italic">workout</span>
+              </div>
+              <div className="flex items-center gap-4">
+                <span className="text-white">is built by </span>
+                <span className="text-emerald-400 italic">computer</span>
+                <span className="text-white"> vision?</span>
+              </div>
             </motion.h2>
           </motion.div>
 

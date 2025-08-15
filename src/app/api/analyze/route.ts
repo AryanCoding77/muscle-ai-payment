@@ -26,35 +26,104 @@ export async function POST(request: NextRequest) {
   try {
     // Get the user ID from the request headers
     const userId = request.headers.get("x-user-id");
+    let isFreeTrial = false;
     
     // If userId is provided, check quota before processing
     if (userId) {
       try {
-        // Check user's quota
-        const baseUrl = new URL(request.url).origin;
-        const quotaResponse = await fetch(`${baseUrl}/api/check-quota`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ userId }),
-        });
+        // Check if user has an active subscription
+        const { data: subscription } = await supabaseAdmin
+          .from("user_subscriptions")
+          .select("*")
+          .eq("user_id", userId)
+          .eq("status", "active")
+          .single();
         
-        const quotaData = await quotaResponse.json();
-        
-        // If quota check failed, return the error
-        if (!quotaResponse.ok || !quotaData.success) {
-          return NextResponse.json(
-            { 
-              error: quotaData.message || "Quota exceeded", 
-              requiresUpgrade: quotaData.requiresUpgrade || false,
-              quota: quotaData.quota || { used: 0, limit: 0, remaining: 0 }
+        // If no active subscription, check for free trial
+        if (!subscription) {
+          // Check free trial status
+          const { data: trialData, error: trialError } = await supabaseAdmin
+            .from("user_trials")
+            .select("*")
+            .eq("user_id", userId)
+            .single();
+          
+          // If there's an error other than "no rows found", return the error
+          if (trialError && trialError.code !== "PGRST116") {
+            console.error("Error checking free trial:", trialError);
+            return NextResponse.json(
+              { error: "Failed to check free trial status" },
+              { status: 500 }
+            );
+          }
+          
+          // If user has a trial entry, check if they've used all their credits
+          if (trialData) {
+            const analysesUsed = trialData.analyses_used;
+            const analysesLimit = 2; // Free trial limit is 2 analyses
+            
+            if (analysesUsed >= analysesLimit) {
+              return NextResponse.json(
+                { 
+                  error: "Your free trial has ended. To continue analyzing your photos, please choose a subscription plan.",
+                  requiresUpgrade: true,
+                  trialEnded: true
+                },
+                { status: 403 }
+              );
+            }
+            
+            // Mark that this is a free trial user
+            isFreeTrial = true;
+          } else {
+            // If user doesn't have a trial entry, create one
+            const { data: newTrial, error: insertError } = await supabaseAdmin
+              .from("user_trials")
+              .insert([
+                { 
+                  user_id: userId,
+                  analyses_used: 0,
+                  trial_started_at: new Date().toISOString()
+                }
+              ])
+              .select()
+              .single();
+              
+            if (insertError) {
+              console.error("Error creating free trial:", insertError);
+              // Continue without creating a trial entry - non-critical error
+            } else {
+              // Mark that this is a free trial user
+              isFreeTrial = true;
+            }
+          }
+        } else {
+          // User has an active subscription, check quota as usual
+          const baseUrl = new URL(request.url).origin;
+          const quotaResponse = await fetch(`${baseUrl}/api/check-quota`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
             },
-            { status: 403 }
-          );
+            body: JSON.stringify({ userId }),
+          });
+          
+          const quotaData = await quotaResponse.json();
+          
+          // If quota check failed, return the error
+          if (!quotaResponse.ok || !quotaData.success) {
+            return NextResponse.json(
+              { 
+                error: quotaData.message || "Quota exceeded", 
+                requiresUpgrade: quotaData.requiresUpgrade || false,
+                quota: quotaData.quota || { used: 0, limit: 0, remaining: 0 }
+              },
+              { status: 403 }
+            );
+          }
+          
+          console.log("Quota check passed:", quotaData);
         }
-        
-        console.log("Quota check passed:", quotaData);
       } catch (quotaError) {
         console.error("Error checking quota:", quotaError);
         // Continue with analysis if quota check fails (fallback behavior)
@@ -558,7 +627,45 @@ Muscles not visible in this image:
           } else {
             // Success! Return the processed analysis
             let quotaInfo = null;
-            if (userId) {
+            
+            // If this is a free trial user, increment their usage count
+            if (userId && isFreeTrial) {
+              try {
+                // First, get the current analyses_used count
+                const { data: currentData, error: fetchError } = await supabaseAdmin
+                  .from("user_trials")
+                  .select("analyses_used")
+                  .eq("user_id", userId)
+                  .single();
+                  
+                if (!fetchError) {
+                  // Increment the analyses_used count by 1
+                  const newAnalysesUsed = (currentData?.analyses_used || 0) + 1;
+                  
+                  // Update the analyses_used count for this user
+                  const { error: updateError } = await supabaseAdmin
+                    .from("user_trials")
+                    .update({ analyses_used: newAnalysesUsed })
+                    .eq("user_id", userId);
+                  
+                  if (!updateError) {
+                    // Set quota info for response with a flag indicating the server updated the count
+                    quotaInfo = {
+                      used: newAnalysesUsed,
+                      limit: 2,
+                      remaining: Math.max(0, 2 - newAnalysesUsed),
+                      isFreeTrialUsage: true, // This flag tells the client not to increment again
+                      updatedByServer: true
+                    };
+                    
+                    console.log("Free trial usage updated by server:", quotaInfo);
+                  }
+                }
+              } catch (updateError) {
+                console.error("Error updating free trial usage:", updateError);
+                // Continue without updating usage - client will handle this
+              }
+            } else if (userId) {
               try {
                 // Get quota info without incrementing (just for display)
                 const { data: subscription } = await supabaseAdmin
@@ -567,7 +674,7 @@ Muscles not visible in this image:
                   .eq("user_id", userId)
                   .eq("status", "active")
                   .single();
-                
+                  
                 if (subscription) {
                   const resetDate = new Date(subscription.last_quota_reset);
                   resetDate.setDate(resetDate.getDate() + 30); // 30 days from last reset
@@ -586,7 +693,7 @@ Muscles not visible in this image:
             }
             
             return NextResponse.json({
-              analysis: processedContent,
+              analysis: content,
               cached: false,
               modelUsed: modelToUse,
               quota: quotaInfo

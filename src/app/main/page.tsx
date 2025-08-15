@@ -17,6 +17,7 @@ import PricingPlans from "@/components/PricingPlans";
 import toast from "react-hot-toast";
 import QuotaDisplay from "@/components/QuotaDisplay";
 import AnalysisDashboard from "@/components/AnalysisDashboard";
+import FreeTrialModal from "@/components/FreeTrialModal";
 
 export default function Home() {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
@@ -33,6 +34,19 @@ export default function Home() {
   const { logout, user } = useAuth0();
   const { userInfo } = useUser();
   const router = useRouter();
+  
+  // Free trial state
+  const [freeTrialData, setFreeTrialData] = useState({
+    isOnFreeTrial: false,
+    analysesUsed: 0,
+    analysesLimit: 2,
+    analysesRemaining: 0,
+    trialStartedAt: '',
+    trialEnded: false
+  });
+  const [showFreeTrialModal, setShowFreeTrialModal] = useState(false);
+  const [showPricingModal, setShowPricingModal] = useState(false);
+  const hasCheckedFreeTrial = useRef(false);
 
   useEffect(() => {
     // Add smooth scroll behavior to the page
@@ -42,6 +56,42 @@ export default function Home() {
       document.documentElement.style.scrollBehavior = '';
     };
   }, []);
+
+  // Check free trial status when user logs in
+  useEffect(() => {
+    const checkFreeTrial = async () => {
+      if (user?.sub && !userInfo.subscription && !hasCheckedFreeTrial.current) {
+        try {
+          const response = await fetch("/api/check-free-trial", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ userId: user.sub }),
+          });
+          
+          if (response.ok) {
+            const data = await response.json();
+            setFreeTrialData(data);
+            
+            // Show the free trial modal if user is on free trial
+            if (data.isOnFreeTrial) {
+              setShowFreeTrialModal(true);
+            } else if (data.trialEnded) {
+              // Show the trial ended modal if trial has ended
+              setShowFreeTrialModal(true);
+            }
+            
+            hasCheckedFreeTrial.current = true;
+          }
+        } catch (error) {
+          console.error("Error checking free trial status:", error);
+        }
+      }
+    };
+    
+    checkFreeTrial();
+  }, [user, userInfo.subscription]);
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -72,12 +122,43 @@ export default function Home() {
   const analyzeImage = async () => {
     if (!selectedImage) return;
 
-    // Check if user has an active subscription
-    if (!userInfo.subscription || userInfo.subscription.status !== "active") {
-      toast.error(
-        "You need an active subscription to analyze images. Please purchase a plan."
-      );
-      return;
+    // Check if user has an active subscription or is on free trial
+    const hasActiveSubscription = userInfo.subscription && userInfo.subscription.status === "active";
+    
+    if (!hasActiveSubscription && !freeTrialData.isOnFreeTrial) {
+      // If no subscription and free trial ended, show pricing modal
+      if (freeTrialData.trialEnded) {
+        setShowFreeTrialModal(true);
+        return;
+      }
+      
+      // If no subscription and not checked free trial yet, check it now
+      if (!hasCheckedFreeTrial.current) {
+        try {
+          const response = await fetch("/api/check-free-trial", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ userId: user?.sub }),
+          });
+          
+          if (response.ok) {
+            const data = await response.json();
+            setFreeTrialData(data);
+            hasCheckedFreeTrial.current = true;
+            
+            if (!data.isOnFreeTrial) {
+              setShowFreeTrialModal(true);
+              return;
+            }
+          }
+        } catch (error) {
+          console.error("Error checking free trial status:", error);
+          toast.error("Failed to check free trial status");
+          return;
+        }
+      }
     }
 
     setIsAnalyzing(true);
@@ -92,7 +173,6 @@ export default function Home() {
     const timeSinceLastAnalysis = now - lastAnalysisTime.current;
     if (timeSinceLastAnalysis < 1000) {
       // 1 second cooldown instead of 3
-      // 3 seconds cooldown
       setError(
         `Please wait ${Math.ceil(
           (1000 - timeSinceLastAnalysis) / 1000
@@ -149,6 +229,56 @@ export default function Home() {
         throw new Error("No analysis data returned from model");
       }
 
+      // Update free trial usage if user is on free trial
+      if (!hasActiveSubscription && freeTrialData.isOnFreeTrial && userId) {
+        try {
+          // Check if the analyze endpoint already updated the free trial count
+          const trialUpdatedByAnalyze = data.quota && data.quota.isFreeTrialUsage;
+          
+          if (!trialUpdatedByAnalyze) {
+            // Only update if not already updated by the analyze endpoint
+            const trialResponse = await fetch("/api/update-free-trial", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({ userId }),
+            });
+            
+            if (trialResponse.ok) {
+              const trialData = await trialResponse.json();
+              setFreeTrialData(trialData);
+              
+              // Show the free trial modal with updated info
+              if (trialData.analysesRemaining === 0) {
+                // Will show the trial ended modal after analysis is complete
+                setTimeout(() => {
+                  setShowFreeTrialModal(true);
+                }, 1000);
+              }
+            }
+          } else {
+            // If analyze endpoint already updated the count, just update the local state
+            setFreeTrialData({
+              ...freeTrialData,
+              analysesUsed: data.quota.used,
+              analysesRemaining: data.quota.remaining,
+              isOnFreeTrial: data.quota.remaining > 0,
+              trialEnded: data.quota.remaining <= 0
+            });
+            
+            // Show the free trial modal if trial ended
+            if (data.quota.remaining === 0) {
+              setTimeout(() => {
+                setShowFreeTrialModal(true);
+              }, 1000);
+            }
+          }
+        } catch (error) {
+          console.error("Error updating free trial usage:", error);
+        }
+      }
+
       if (data.wasSafetyFiltered) {
         console.log(
           "Note: Safety filter was triggered but we've provided a useful analysis."
@@ -199,14 +329,21 @@ export default function Home() {
       }
 
       setAnalysis(data.analysis);
-    } catch (err) {
-      console.error("Error:", err);
-      setError(
-        err instanceof Error ? err.message : "An unknown error occurred"
-      );
-    } finally {
       setIsLoading(false);
       setIsAnalyzing(false);
+
+      // Scroll to the analysis results
+      setTimeout(() => {
+        const analysisElement = document.getElementById("analysis-results");
+        if (analysisElement) {
+          analysisElement.scrollIntoView({ behavior: "smooth" });
+        }
+      }, 100);
+    } catch (error) {
+      setIsLoading(false);
+      setIsAnalyzing(false);
+      setError((error as Error).message);
+      console.error("Analysis error:", error);
     }
   };
 
@@ -808,9 +945,20 @@ export default function Home() {
     });
   };
 
+  // Handle closing the free trial modal
+  const handleCloseFreeTrialModal = () => {
+    setShowFreeTrialModal(false);
+  };
+
+  // Handle clicking "Choose a Plan" in the free trial modal
+  const handleUpgrade = () => {
+    setShowFreeTrialModal(false);
+    setShowPricingModal(true);
+  };
+
   return (
     <ProtectedRoute>
-      <div className="min-h-screen bg-white">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
         {/* Proper header with app title and user menu */}
         <header className="bg-white border-b border-gray-200 py-4 px-4 flex items-center justify-between shadow-sm">
           <div className="flex items-center">
@@ -1354,6 +1502,17 @@ export default function Home() {
           </div>
         </div>
       </footer>
+
+      {/* Free Trial Modal */}
+      <FreeTrialModal
+        isOpen={showFreeTrialModal}
+        onClose={handleCloseFreeTrialModal}
+        trialData={freeTrialData}
+        onUpgrade={handleUpgrade}
+      />
+      
+      {/* Pricing Modal */}
+      {showPricingModal && <PricingPlans />}
     </ProtectedRoute>
   );
 }
