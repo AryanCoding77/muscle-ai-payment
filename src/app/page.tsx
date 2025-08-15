@@ -2015,17 +2015,17 @@ export default function HomePage() {
             className="text-center mb-16"
           >
             <motion.h2
-              className="text-5xl md:text-6xl font-bold mb-12 flex flex-col items-center justify-center gap-4"
+              className="text-4xl sm:text-5xl md:text-6xl font-bold mb-8 md:mb-12 flex flex-col items-center justify-center gap-2 md:gap-4 px-4"
               variants={fadeIn}
             >
-              <div className="flex items-center gap-4">
-                <span className="text-white">What happens when your </span>
+              <div className="flex flex-wrap justify-center items-center gap-2 md:gap-4 text-center">
+                <span className="text-white">What happens when your</span>
                 <span className="text-pink-400 italic">workout</span>
               </div>
-              <div className="flex items-center gap-4">
-                <span className="text-white">is built by </span>
+              <div className="flex flex-wrap justify-center items-center gap-2 md:gap-4 text-center">
+                <span className="text-white">is built by</span>
                 <span className="text-emerald-400 italic">computer</span>
-                <span className="text-white"> vision?</span>
+                <span className="text-white">vision?</span>
               </div>
             </motion.h2>
           </motion.div>
